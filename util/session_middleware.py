@@ -1,16 +1,28 @@
 from typing import Any, Dict, Awaitable, Callable
 
-from aiogram.types import Update
+from aiogram.types import Message
 
-from util.database.configure import async_session_maker
+from config.database_engine import async_session_maker
 
 
-async def get_db_session(
-    handler: Callable[[Update, Dict[str, Any]], Awaitable[Any]],
-    event: Update,
+async def get_async_database_session(
+    handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+    message: Message,
     data: Dict[str, Any],
 ) -> Any:
     async with async_session_maker() as async_session:
         async with async_session.begin():
             data["async_session"] = async_session
-            return await handler(event, data)
+            return await handler(message, data)
+
+
+async def filter_non_user(
+    handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+    message: Message,
+    data: Dict[str, Any],
+) -> Any:
+    if not message.from_user:
+        return None
+
+    data["telegram_user"] = message.from_user
+    return await handler(message, data)

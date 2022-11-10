@@ -1,25 +1,33 @@
 from time import sleep
+from typing import Optional
 
 from aiogram import Dispatcher, Bot
-from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, User as TelegramUser
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.app import PROD_ENV_NAME, API_TOKEN, ENVIRONMENT, DEV_ENV_NAME
 from config.log import logger
-from util.session_middleware import get_db_session
+from model.models import UserModel
+from util.query.user import get_user_by_telegram_id, save_user
+from util.session_middleware import get_async_database_session, filter_non_user
 from util.webhook import configure_webhook, get_webhook_url
 
 dp = Dispatcher()
 bot = Bot(API_TOKEN, parse_mode="HTML")
 
 
-@dp.message(Command(commands=["start"]))
-async def command_start_handler(message: Message, async_session: AsyncSession) -> None:
-    logger.info(f"async_session: {async_session}")
-    await message.answer(f"Hello, <b>{message.from_user.full_name}!</b>")
+@dp.message()
+async def command_start_handler(message: Message, async_session: AsyncSession, telegram_user: TelegramUser) -> None:
+    user: Optional[UserModel] = await get_user_by_telegram_id(async_session=async_session, telegram_id=telegram_user.id)
+
+    if not user:
+        await save_user(async_session=async_session, telegram_user=telegram_user)
+        await message.answer(f"Welcome, {telegram_user.full_name}!")
+        return
+
+    await message.answer(f"Welcome back, {telegram_user.full_name}!")
 
 
 async def on_startup() -> None:
@@ -38,7 +46,8 @@ def main() -> None:
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
 
-    dp.message.middleware(get_db_session)  # type: ignore
+    dp.message.middleware(filter_non_user)  # type: ignore
+    dp.message.middleware(get_async_database_session)  # type: ignore
 
     if ENVIRONMENT == PROD_ENV_NAME:
         sleeping_time, webhook_path, port = configure_webhook()

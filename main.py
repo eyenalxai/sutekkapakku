@@ -1,7 +1,8 @@
 from time import sleep
 from typing import Optional
 
-from aiogram import Dispatcher, Bot
+from aiogram import Dispatcher, Bot, F
+from aiogram.filters import Command
 from aiogram.types import Message, User as TelegramUser
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
@@ -18,7 +19,7 @@ dp = Dispatcher()
 bot = Bot(API_TOKEN, parse_mode="HTML")
 
 
-@dp.message()
+@dp.message(Command("start"))
 async def command_start_handler(message: Message, async_session: AsyncSession, telegram_user: TelegramUser) -> None:
     user: Optional[UserModel] = await get_user_by_telegram_id(async_session=async_session, telegram_id=telegram_user.id)
 
@@ -28,6 +29,13 @@ async def command_start_handler(message: Message, async_session: AsyncSession, t
         return
 
     await message.answer(f"Welcome back, {telegram_user.full_name}!")
+
+
+@dp.message(F.content_type.in_({"sticker"}))
+async def oof(message: Message, async_session: AsyncSession, telegram_user: TelegramUser) -> None:
+    if not message.sticker:
+        logger.warning(f"No sticker in message?! User: {telegram_user.full_name} - @{telegram_user.username or 'None'}")
+        return
 
 
 async def on_startup() -> None:

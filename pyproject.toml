@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "sutekkapakku"
+version = "0.1.0"
+description = ""
+authors = ["Yest Izit <hi@dmitry.email>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiogram = { git = "https://github.com/aiogram/aiogram.git", rev = "dev-3.x" }
+sqlalchemy = "2.0.0b3"
+asyncpg = "^0.27.0"
+greenlet = "^2.0.1"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^0.982"
+black = { extras = ["d"], version = "^22.10.0" }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

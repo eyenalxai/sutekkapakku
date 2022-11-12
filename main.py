@@ -9,7 +9,7 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.app import PROD_DEPLOY, API_TOKEN, DEPLOY_METHOD, DEV_DEPLOY
+from config.app import PROD_DEPLOY, API_TOKEN, DEPLOY_METHOD, DEV_DEPLOY, ADMIN_TELEGRAM_ID
 from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerModel
 from util.image import calculate_hash
@@ -30,14 +30,15 @@ bot = Bot(API_TOKEN, parse_mode="HTML")
 async def command_start_handler(message: Message, async_session: AsyncSession, telegram_user: TelegramUser) -> None:
     text = (
         "Send me a sticker and I'll put it in your personal sticker pack.\n"
-        "Send me a sticker from a created sticker pack and I'll remove it."
+        "Send me a sticker from a created sticker pack and I'll remove it.\n\n"
+        f"If you have any questions, please contact me. <a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>"
     )
 
     user: Optional[UserModel] = await get_user_by_telegram_id(async_session=async_session, telegram_id=telegram_user.id)
 
     if not user:
         await save_user(async_session=async_session, telegram_user=telegram_user)
-        await message.reply(f"Welcome, {telegram_user.full_name}!\n\n{text}")
+        await message.reply(f"Welcome, {telegram_user.full_name}!\n\n{text}", parse_mode="HTML")
         return
 
     await message.reply(f"Hello, {telegram_user.full_name}!\n\n{text}")

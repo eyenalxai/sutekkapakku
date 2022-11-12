@@ -7,7 +7,7 @@ from aiogram.types import Message, Sticker, User as TelegramUser
 from imagehash import ImageHash
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.app import ENVIRONMENT, PROD_ENV_NAME
+from config.app import ENVIRONMENT, PROD_ENV_NAME, ADMIN_TELEGRAM_ID
 from config.log import logger
 from model.models import StickerSetModel, UserModel
 from util.query.sticker import save_sticker, is_more_than_one_sticker_in_set, remove_sticker
@@ -51,15 +51,21 @@ async def create_new_sticker_set(
         image_hash=image_hash,
     )
 
+    sticker_set_title = f"{telegram_user_username}'s Greatest Hits"
+
     await bot.create_new_sticker_set(
         user_id=telegram_user.id,
         name=sticker_set_name,
-        title=f"{telegram_user_username}'s Greatest Hits",
+        title=sticker_set_title,
         emojis=emoji,
         png_sticker=sticker_model.file_id,
     )
 
-    await message.reply(f"Sticker pack created!\n\nLink: https://t.me/addstickers/{sticker_set.name}")
+    await message.reply(
+        "Sticker pack created!\n\n"
+        f"Link: <a href='https://t.me/addstickers/{sticker_set_name}'>{sticker_set_title}</a>",
+        parse_mode="HTML",
+    )
 
 
 async def handle_sticker_removal(
@@ -80,7 +86,8 @@ async def handle_sticker_removal(
                     "It seems like you tried to remove a sticker from the pack, "
                     "but it wasn't in the set due to a bug in Telegram, most likely. "
                     "Please wait 15 minutes and check if sticker is in your pack still.\n"
-                    f"If it's not, please contact me and report this issue."
+                    f"If it is, please contact me. <a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>",
+                    parse_mode="HTML",
                 )
         else:
             await message.reply("Sticker removed from the pack.")
@@ -119,4 +126,4 @@ async def handle_sticker_addition(
         png_sticker=received_sticker.file_id,
     )
 
-    await message.reply(f"Sticker added to the pack.\nLink: https://t.me/addstickers/{user_sticker_set.name}")
+    await message.reply("Sticker added to the pack.")

@@ -9,7 +9,7 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.app import PROD_ENV_NAME, API_TOKEN, ENVIRONMENT, DEV_ENV_NAME
+from config.app import PROD_DEPLOY, API_TOKEN, DEPLOY_METHOD, DEV_DEPLOY
 from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerModel
 from util.image import calculate_hash
@@ -127,13 +127,13 @@ async def oof(message: Message, async_session: AsyncSession, telegram_user: Tele
 
 
 async def on_startup() -> None:
-    if ENVIRONMENT == PROD_ENV_NAME:
+    if DEPLOY_METHOD == PROD_DEPLOY:
         webhook_url = get_webhook_url()
-        await bot.set_webhook(webhook_url)
+        await bot.set_webhook(url=webhook_url)
 
 
 async def on_shutdown() -> None:
-    if ENVIRONMENT == PROD_ENV_NAME:
+    if DEPLOY_METHOD == PROD_DEPLOY:
         await bot.session.close()
         await bot.delete_webhook()
 
@@ -145,7 +145,7 @@ def main() -> None:
     dp.message.middleware(filter_non_user)  # type: ignore
     dp.message.middleware(get_async_database_session)  # type: ignore
 
-    if ENVIRONMENT == PROD_ENV_NAME:
+    if DEPLOY_METHOD == PROD_DEPLOY:
         sleeping_time, webhook_path, port = configure_webhook()
         logger.info(f"Sleeping for {sleeping_time} seconds...")
         sleep(sleeping_time)
@@ -157,7 +157,7 @@ def main() -> None:
 
         web.run_app(app, host="0.0.0.0", port=port)
 
-    if ENVIRONMENT == DEV_ENV_NAME:
+    if DEPLOY_METHOD == DEV_DEPLOY:
         dp.run_polling(bot, skip_updates=True)
 
 

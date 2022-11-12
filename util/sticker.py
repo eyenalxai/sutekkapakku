@@ -14,11 +14,15 @@ from util.query.sticker import save_sticker, is_more_than_one_sticker_in_set, re
 from util.query.sticker_set import create_sticker_set
 
 
+def random_letter_string(length: int) -> str:
+    return "".join(choices(string.ascii_letters, k=length))
+
+
 def build_sticker_set_prefix(telegram_user_username: str) -> str:
     if ENVIRONMENT == PROD_ENV_NAME:
-        return telegram_user_username
+        return f"{telegram_user_username}_{random_letter_string(3)}"
 
-    return "".join(choices(string.ascii_letters, k=6))
+    return random_letter_string(length=6)
 
 
 async def create_new_sticker_set(

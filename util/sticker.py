@@ -54,7 +54,7 @@ async def create_new_sticker_set(
     await bot.create_new_sticker_set(
         user_id=telegram_user.id,
         name=sticker_set_name,
-        title=f"Greatest Hits",
+        title=f"{telegram_user_username}'s Greatest Hits",
         emojis=emoji,
         png_sticker=sticker_model.file_id,
     )

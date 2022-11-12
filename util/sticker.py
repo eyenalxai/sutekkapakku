@@ -7,10 +7,18 @@ from aiogram.types import Message, Sticker, User as TelegramUser
 from imagehash import ImageHash
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config.app import ENVIRONMENT, PROD_ENV_NAME
 from config.log import logger
 from model.models import StickerSetModel, UserModel
 from util.query.sticker import save_sticker, is_more_than_one_sticker_in_set, remove_sticker
 from util.query.sticker_set import create_sticker_set
+
+
+def build_sticker_set_prefix(telegram_user_username: str) -> str:
+    if ENVIRONMENT == PROD_ENV_NAME:
+        return telegram_user_username
+
+    return "".join(choices(string.ascii_letters, k=6))
 
 
 async def create_new_sticker_set(
@@ -25,10 +33,8 @@ async def create_new_sticker_set(
     emoji: str,
     image_hash: ImageHash,
 ) -> None:
-    # Random letter string of length 6
-    asdas = "".join(choices(string.ascii_letters, k=6))
-
-    sticker_set_name = f"{asdas}_greatest_hits_by_{bot_username}"
+    sticker_pack_prefix: str = build_sticker_set_prefix(telegram_user_username=telegram_user_username)
+    sticker_set_name = f"{sticker_pack_prefix}_greatest_hits_by_{bot_username}"
 
     sticker_set = await create_sticker_set(
         async_session=async_session, user=user, is_animated=sticker.is_animated, name=sticker_set_name

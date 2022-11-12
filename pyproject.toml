@@ -11,6 +11,8 @@ aiogram = { git = "https://github.com/aiogram/aiogram.git", rev = "dev-3.x" }
 sqlalchemy = "2.0.0b3"
 asyncpg = "^0.27.0"
 greenlet = "^2.0.1"
+pillow = "^9.3.0"
+imagehash = "^4.3.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^0.982"
@@ -21,3 +23,8 @@ psycopg2-binary = "^2.9.5"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true

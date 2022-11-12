@@ -31,6 +31,7 @@ class StickerSetModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
+    name: Mapped[str] = mapped_column(String(256), unique=True)
     sticker_set_type: Mapped[StickerSetType] = mapped_column(EnumType(StickerSetType, name="sticker_set_type"))
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
@@ -43,6 +44,11 @@ class StickerModel(Base):
     __tablename__ = "sticker"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    file_id: Mapped[str] = mapped_column(String(512))
+    file_unique_id: Mapped[str] = mapped_column(String(512))
+    image_hash: Mapped[str] = mapped_column(String(256))
 
     sticker_set_id: Mapped[int] = mapped_column(ForeignKey("sticker_set.id"))
     sticker_set: Mapped["StickerSetModel"] = relationship(back_populates="stickers")

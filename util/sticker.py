@@ -38,7 +38,7 @@ async def create_new_sticker_set(
     image_hash: ImageHash,
 ) -> None:
     sticker_pack_prefix: str = build_sticker_set_prefix(telegram_user_username=telegram_user_username)
-    sticker_set_name = f"{sticker_pack_prefix}_greatest_hits_by_{bot_username}"
+    sticker_set_name = f"{sticker_pack_prefix}_by_{bot_username}"
 
     sticker_set = await create_sticker_set(
         async_session=async_session, user=user, is_animated=sticker.is_animated, name=sticker_set_name

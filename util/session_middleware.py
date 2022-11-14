@@ -6,9 +6,9 @@ from config.database_engine import async_session_maker
 
 
 async def get_async_database_session(
-    handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-    message: Message,
-    data: Dict[str, Any],
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+        message: Message,
+        data: Dict[str, Any],
 ) -> Any:
     async with async_session_maker() as async_session:
         async with async_session.begin():
@@ -17,12 +17,18 @@ async def get_async_database_session(
 
 
 async def filter_non_user(
-    handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-    message: Message,
-    data: Dict[str, Any],
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+        message: Message,
+        data: Dict[str, Any],
 ) -> Any:
     if not message.from_user:
         return None
 
+    if not message.from_user.username:
+        await message.reply("Please set a username to use this bot.")
+        return None
+
     data["telegram_user"] = message.from_user
+    data["telegram_user_username"] = message.from_user.username
+
     return await handler(message, data)

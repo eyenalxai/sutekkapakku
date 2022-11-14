@@ -3,11 +3,11 @@ from os import getenv
 API_TOKEN: str = getenv("API_TOKEN", "NONE")
 assert API_TOKEN != "NONE", "API_TOKEN is not set"
 
-PROD_DEPLOY = "WEBHOOK"
-DEV_DEPLOY = "POLLING"
-DEPLOY_METHOD = getenv("DEPLOY_METHOD", "NONE")
-assert DEPLOY_METHOD != "NONE", "DEPLOY_METHOD is not set"
-assert DEPLOY_METHOD in [DEV_DEPLOY, PROD_DEPLOY], "DEPLOY_METHOD is not valid"
+WEBHOOK = "WEBHOOK"
+POLLING = "POLLING"
+POLL_TYPE = getenv("POLL_TYPE", "NONE")
+assert POLL_TYPE != "NONE", "POLL_TYPE is not set"
+assert POLL_TYPE in [POLLING, WEBHOOK], "POLL_TYPE is not valid"
 
 PROD_ENV_NAME = "PROD"
 DEV_ENV_NAME = "DEV"

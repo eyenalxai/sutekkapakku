@@ -25,7 +25,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
-from model.models import UserModel, StickerModel, StickerSetModel  # type: ignore
+from model.models import UserModel, StickerSetModel  # type: ignore
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

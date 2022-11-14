@@ -1,6 +1,6 @@
 import string
 from random import choices
-from typing import Union
+from typing import TypedDict
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
@@ -38,9 +38,15 @@ def build_file_url(api_token: str, file_path: str) -> str:
     return f"https://api.telegram.org/file/bot{api_token}/{file_path}"
 
 
+class StickerFileInput(TypedDict, total=False):
+    png_sticker: str
+    tgs_sticker: URLInputFile
+    webm_sticker: URLInputFile
+
+
 async def get_sticker_file_input(
         bot: Bot, api_token: str, sticker_set_type: StickerSetType, sticker: Sticker
-) -> dict[str, Union[str, URLInputFile]]:
+) -> StickerFileInput:
     if sticker_set_type == StickerSetType.ANIMATED or sticker_set_type == StickerSetType.VIDEO:
         file: File = await bot.get_file(file_id=sticker.file_id)
 
@@ -52,12 +58,12 @@ async def get_sticker_file_input(
         url_input_file = URLInputFile(url=sticker_url)
 
         if sticker_set_type == StickerSetType.ANIMATED:
-            return {"tgs_sticker": url_input_file}
+            return StickerFileInput(tgs_sticker=url_input_file)
 
         if sticker_set_type == StickerSetType.VIDEO:
-            return {"webm_sticker": url_input_file}
+            return StickerFileInput(webm_sticker=url_input_file)
 
-    return {"png_sticker": sticker.file_id}
+    return StickerFileInput(png_sticker=sticker.file_id)
 
 
 async def create_new_sticker_set(
@@ -87,7 +93,7 @@ async def create_new_sticker_set(
         title=sticker_set_title,
     )
 
-    sticker_file_input = await get_sticker_file_input(
+    sticker_file_input: StickerFileInput = await get_sticker_file_input(
         bot=bot, api_token=api_token, sticker_set_type=sticker_set_type, sticker=sticker
     )
 
@@ -96,7 +102,7 @@ async def create_new_sticker_set(
         name=sticker_set.name,
         title=sticker_set.title,
         emojis=emoji,
-        **sticker_file_input,  # type: ignore
+        **sticker_file_input,
     )
 
     await message.reply(
@@ -138,7 +144,7 @@ async def handle_sticker_addition(
 ) -> None:
     sticker_set_type = get_sticker_set_type_from_sticker(sticker=sticker)
 
-    sticker_file_input: dict[str, str | URLInputFile] = await get_sticker_file_input(
+    sticker_file_input: StickerFileInput = await get_sticker_file_input(
         bot=bot, api_token=api_token, sticker_set_type=sticker_set_type, sticker=sticker
     )
 
@@ -146,7 +152,7 @@ async def handle_sticker_addition(
         user_id=telegram_user.id,
         name=user_sticker_set.name,
         emojis=emoji,
-        **sticker_file_input,  # type: ignore
+        **sticker_file_input,
     )
 
     await message.reply("Sticker added to the pack.")

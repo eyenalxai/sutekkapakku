@@ -1,5 +1,5 @@
-import string
 from random import choices
+from string import ascii_letters
 from typing import TypedDict
 
 from aiogram import Bot
@@ -7,35 +7,10 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.app import ENVIRONMENT, PROD_ENV_NAME, ADMIN_TELEGRAM_ID
+from config.app import ADMIN_TELEGRAM_ID, PROD_ENV_NAME, ENVIRONMENT
 from config.log import logger
 from model.models import StickerSetModel, UserModel, StickerSetType
 from util.query.sticker_set import create_sticker_set, get_sticker_set_type_from_sticker
-
-
-def build_sticker_set_title(sticker_set_type: StickerSetType, username: str) -> str:
-    if sticker_set_type == StickerSetType.ANIMATED:
-        return f"{username}'s Greatest Animated Hits"
-
-    if sticker_set_type == StickerSetType.VIDEO:
-        return f"{username}'s Greatest Video Hits"
-
-    return f"{username}'s Greatest Hits"
-
-
-def random_letter_string(length: int) -> str:
-    return "".join(choices(string.ascii_letters, k=length))
-
-
-def build_sticker_set_prefix(telegram_user_username: str) -> str:
-    if ENVIRONMENT == PROD_ENV_NAME:
-        return f"{telegram_user_username}_{random_letter_string(3)}"
-
-    return random_letter_string(length=6)
-
-
-def build_file_url(api_token: str, file_path: str) -> str:
-    return f"https://api.telegram.org/file/bot{api_token}/{file_path}"
 
 
 class StickerFileInput(TypedDict, total=False):
@@ -47,13 +22,16 @@ class StickerFileInput(TypedDict, total=False):
 async def get_sticker_file_input(
         bot: Bot, api_token: str, sticker_set_type: StickerSetType, sticker: Sticker
 ) -> StickerFileInput:
+    def build_file_url(_api_token: str, file_path: str) -> str:
+        return f"https://api.telegram.org/file/bot{_api_token}/{file_path}"
+
     if sticker_set_type == StickerSetType.ANIMATED or sticker_set_type == StickerSetType.VIDEO:
         file: File = await bot.get_file(file_id=sticker.file_id)
 
         if not file.file_path:
             raise ValueError("File path is oof.")
 
-        sticker_url = build_file_url(api_token=api_token, file_path=file.file_path)
+        sticker_url = build_file_url(_api_token=api_token, file_path=file.file_path)
 
         url_input_file = URLInputFile(url=sticker_url)
 
@@ -78,11 +56,29 @@ async def create_new_sticker_set(
         bot_username: str,
         emoji: str,
 ) -> None:
+    def build_sticker_set_title(_sticker_set_type: StickerSetType, username: str) -> str:
+        if _sticker_set_type == StickerSetType.ANIMATED:
+            return f"{username}'s Greatest Animated Hits"
+
+        if _sticker_set_type == StickerSetType.VIDEO:
+            return f"{username}'s Greatest Video Hits"
+
+        return f"{username}'s Greatest Hits"
+
+    def build_sticker_set_prefix(_telegram_user_username: str) -> str:
+        def random_letter_string(length: int) -> str:
+            return "".join(choices(ascii_letters, k=length))
+
+        if ENVIRONMENT == PROD_ENV_NAME:
+            return f"{_telegram_user_username}_{random_letter_string(3)}"
+
+        return random_letter_string(length=6)
+
     sticker_set_type = get_sticker_set_type_from_sticker(sticker=sticker)
 
-    sticker_set_title = build_sticker_set_title(sticker_set_type=sticker_set_type, username=telegram_user_username)
+    sticker_set_title = build_sticker_set_title(_sticker_set_type=sticker_set_type, username=telegram_user_username)
 
-    sticker_pack_prefix: str = build_sticker_set_prefix(telegram_user_username=telegram_user_username)
+    sticker_pack_prefix: str = build_sticker_set_prefix(_telegram_user_username=telegram_user_username)
     sticker_set_name = f"{sticker_pack_prefix}_by_{bot_username}"
 
     sticker_set = await create_sticker_set(

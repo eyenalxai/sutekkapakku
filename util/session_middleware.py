@@ -1,6 +1,7 @@
 from typing import Any, Dict, Awaitable, Callable, Optional
 
 from aiogram.types import Message
+from emoji import distinct_emoji_list
 
 from config.database_engine import async_session_maker
 from config.log import logger

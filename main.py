@@ -1,7 +1,7 @@
 from time import sleep
 from typing import Optional
 
-from aiogram import Dispatcher, Bot, F, Router
+from aiogram import Dispatcher, Bot, F as MagicFilter, Router
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram.types import Message, User as TelegramUser, Sticker
@@ -42,7 +42,7 @@ async def command_start_handler(message: Message, async_session: AsyncSession, t
     await message.reply(f"Hello, {telegram_user.full_name}!\n\n{text}")
 
 
-@sticker_router.message(F.content_type.in_({"sticker"}))
+@sticker_router.message(MagicFilter.sticker)
 async def handle_sticker(
         message: Message,
         async_session: AsyncSession,

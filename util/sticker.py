@@ -53,7 +53,6 @@ async def create_new_sticker_set(
         telegram_user: TelegramUser,
         telegram_user_username: str,
         user: UserModel,
-        bot_username: str,
         emoji: str,
 ) -> None:
     def build_sticker_set_title(_sticker_set_type: StickerSetType, username: str) -> str:
@@ -73,6 +72,12 @@ async def create_new_sticker_set(
             return f"{_telegram_user_username}_{random_letter_string(3)}"
 
         return random_letter_string(length=6)
+
+    bot_user = await bot.get_me()
+    bot_username = bot_user.username
+
+    if not bot_username:
+        raise ValueError("Bot username is not set!")
 
     sticker_set_type = get_sticker_set_type_from_sticker(sticker=sticker)
 

@@ -3,15 +3,16 @@ from typing import BinaryIO, Optional
 
 from PIL import Image  # type: ignore
 from aiogram import Bot
-from aiogram.types import PhotoSize
+from aiogram.types import PhotoSize, BufferedInputFile
 
 
-def get_image_bytes(bytes_io: BytesIO, resized_image: Image) -> bytes:
-    resized_image.save(bytes_io, format="JPEG")
-    return bytes_io.getvalue()
+def get_picture_bytes(bytes_io: BytesIO, resized_picture: Image, filename: str) -> BufferedInputFile:
+    resized_picture.save(bytes_io, format="JPEG")
+    picture_bytes = bytes_io.getvalue()
+    return BufferedInputFile(picture_bytes, filename=filename)
 
 
-async def get_resized_image_bytes(bot: Bot, picture: PhotoSize) -> bytes:
+async def get_picture_buffered_input(bot: Bot, picture: PhotoSize) -> BufferedInputFile:
     downloaded_image: Optional[BinaryIO] = await bot.download(file=picture.file_id)
 
     if not downloaded_image:
@@ -20,13 +21,13 @@ async def get_resized_image_bytes(bot: Bot, picture: PhotoSize) -> bytes:
     with BytesIO() as bytes_io:
         with Image.open(downloaded_image) as pil_image:
             ratio = pil_image.width / pil_image.height
-
+            filename = f"{picture.file_unique_id}.png"
             if ratio > 1:
-                resized_image = pil_image.resize((512, int(512 / ratio)))
-                return get_image_bytes(bytes_io=bytes_io, resized_image=resized_image)
+                resized_picture = pil_image.resize((512, int(512 / ratio)))
+                return get_picture_bytes(bytes_io=bytes_io, resized_picture=resized_picture, filename=filename)
 
-            resized_image = pil_image.resize((int(512 * ratio), 512))
-            return get_image_bytes(bytes_io=bytes_io, resized_image=resized_image)
+            resized_picture = pil_image.resize((int(512 * ratio), 512))
+            return get_picture_bytes(bytes_io=bytes_io, resized_picture=resized_picture, filename=filename)
 
 
 def get_largest_picture(pictures: list[PhotoSize]) -> PhotoSize:

@@ -1,6 +1,6 @@
 from random import choices
 from string import ascii_letters
-from typing import TypedDict, Optional
+from typing import TypedDict
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
@@ -19,21 +19,18 @@ class StickerFileInput(TypedDict, total=False):
     webm_sticker: URLInputFile
 
 
-async def get_sticker_file_input(
-        bot: Bot, api_token: str, sticker_set_type: StickerSetType, file_id: Optional[str] = None,
-        picture_input_file: Optional[BufferedInputFile] = None
+def get_sticker_file_input_from_picture(picture_buffered_input: BufferedInputFile) -> StickerFileInput:
+    return {"png_sticker": picture_buffered_input}
+
+
+async def get_sticker_file_input_from_sticker(
+        bot: Bot, api_token: str, sticker_set_type: StickerSetType, sticker: Sticker,
 ) -> StickerFileInput:
-    if picture_input_file:
-        return {"png_sticker": picture_input_file}
-
-    if not file_id:
-        raise ValueError("File ID or picture input file must be provided!")
-
     def build_file_url(_api_token: str, file_path: str) -> str:
         return f"https://api.telegram.org/file/bot{_api_token}/{file_path}"
 
     if sticker_set_type == StickerSetType.ANIMATED or sticker_set_type == StickerSetType.VIDEO:
-        file: File = await bot.get_file(file_id=file_id)
+        file: File = await bot.get_file(file_id=sticker.file_id)
 
         if not file.file_path:
             raise ValueError("File path is oof.")
@@ -48,7 +45,7 @@ async def get_sticker_file_input(
         if sticker_set_type == StickerSetType.VIDEO:
             return StickerFileInput(webm_sticker=url_input_file)
 
-    return StickerFileInput(png_sticker=file_id)
+    return StickerFileInput(png_sticker=sticker.file_id)
 
 
 async def create_new_sticker_set(

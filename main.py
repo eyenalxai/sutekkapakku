@@ -12,11 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.app import API_TOKEN, ADMIN_TELEGRAM_ID, WEBHOOK, POLL_TYPE, POLLING
 from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerSetType
-from util.photo import get_resized_image_bytes
+from util.photo import get_picture_buffered_input
 from util.query.user import get_user_by_telegram_id, save_user
 from util.session_middleware import get_async_database_session, filter_non_sticker, filter_non_user, filter_no_caption, \
     get_user_sticker_set_async_session
-from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition, get_sticker_file_input
+from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition, \
+    get_sticker_file_input_from_picture, get_sticker_file_input_from_sticker
 from util.webhook import configure_webhook, get_webhook_url
 
 bot = Bot(API_TOKEN, parse_mode="HTML")
@@ -58,11 +59,11 @@ async def handle_sticker(
         message_sticker: Sticker,
         sticker_emoji: str
 ) -> None:
-    sticker_file_input = await get_sticker_file_input(
+    sticker_file_input = await get_sticker_file_input_from_sticker(
         bot=bot,
         api_token=API_TOKEN,
         sticker_set_type=sticker_set_type,
-        file_id=message_sticker.file_id
+        sticker=message_sticker
     )
 
     if not sticker_set:
@@ -107,15 +108,10 @@ async def handle_picture(
         picture: PhotoSize,
         emojis: str
 ) -> None:
-    resized_picture: bytes = await get_resized_image_bytes(bot=bot, picture=picture)
+    picture_buffered_input: BufferedInputFile = await get_picture_buffered_input(bot=bot, picture=picture)
 
-    picture_input_file = BufferedInputFile(resized_picture, filename=picture.file_unique_id + ".png")
-
-    sticker_file_input = await get_sticker_file_input(
-        bot=bot,
-        api_token=API_TOKEN,
-        sticker_set_type=sticker_set_type,
-        picture_input_file=picture_input_file
+    sticker_file_input = get_sticker_file_input_from_picture(
+        picture_buffered_input=picture_buffered_input
     )
 
     if not sticker_set:

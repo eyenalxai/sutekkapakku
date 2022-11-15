@@ -29,11 +29,12 @@ sticker_router = Router(name="sticker router")
 picture_router = Router(name="picture router")
 
 
-@start_router.message(Command("start"))
+@start_router.message(Command("start", "help"))
 async def command_start_handler(message: Message, async_session: AsyncSession, telegram_user: TelegramUser) -> None:
     text = (
         "Send me a sticker and I'll put it in your personal sticker pack.\n"
-        "Send me a sticker from a created sticker pack and I'll remove it.\n\n"
+        "Send me a sticker from a pack create by this bot and this sticker will be removed.\n"
+        "Send me a picture with an emoji caption and I'll create a sticker from it.\n\n"
         f"If you have any questions, please contact me. <a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>"
     )
 

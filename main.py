@@ -9,7 +9,7 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.app import API_TOKEN, ADMIN_TELEGRAM_ID, WEBHOOK, POLL_TYPE, POLLING
+from config.app import API_TOKEN, WEBHOOK, POLL_TYPE, POLLING, ADMIN_TELEGRAM_ID
 from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerSetType
 from util.photo import get_picture_buffered_input
@@ -33,11 +33,11 @@ picture_router = Router(name="picture router")
 @start_router.message(Command("start", "help"))
 async def command_start_handler(message: Message, async_session: AsyncSession, telegram_user: TelegramUser) -> None:
     text = (
-        "Send me a sticker and I'll put it in your personal sticker pack.\n"
-        "Send me a sticker from a pack create by this bot and this sticker will be removed.\n"
-        "Send me a picture with an emoji caption and I'll create a sticker from it.\n\n"
-        "If you have any questions, please contact me.\n\n"
-        f"<a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>",
+        f"Send me a sticker and I'll put it in your personal sticker pack.\n"
+        f"Send me a sticker from a pack create by this bot and this sticker will be removed.\n"
+        f"Send me a picture with an emoji caption and I'll create a sticker from it.\n"
+        f"If you have any questions, please contact me.\n\n"
+        f"<a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>"
     )
 
     user: Optional[UserModel] = await get_user_by_telegram_id(async_session=async_session, telegram_id=telegram_user.id)

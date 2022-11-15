@@ -130,7 +130,7 @@ async def handle_sticker_removal(
             )
             await message.reply(text=text, parse_mode="HTML")
     else:
-        await message.reply("Sticker removed from the pack. It may take a few minutes for sticker pack to update.")
+        await message.reply(text="Sticker removed from the pack. It may take a few minutes for sticker pack to update.")
 
 
 async def handle_sticker_addition(

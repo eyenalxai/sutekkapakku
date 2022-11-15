@@ -1,10 +1,10 @@
 from random import choices
 from string import ascii_letters
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInputFile
+from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInputFile, BufferedInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.app import ADMIN_TELEGRAM_ID, PROD_ENV_NAME, ENVIRONMENT
@@ -14,14 +14,21 @@ from util.query.sticker_set import create_sticker_set
 
 
 class StickerFileInput(TypedDict, total=False):
-    png_sticker: str
+    png_sticker: str | BufferedInputFile
     tgs_sticker: URLInputFile
     webm_sticker: URLInputFile
 
 
 async def get_sticker_file_input(
-        bot: Bot, api_token: str, sticker_set_type: StickerSetType, file_id: str
+        bot: Bot, api_token: str, sticker_set_type: StickerSetType, file_id: Optional[str] = None,
+        picture_input_file: Optional[BufferedInputFile] = None
 ) -> StickerFileInput:
+    if picture_input_file:
+        return {"png_sticker": picture_input_file}
+
+    if not file_id:
+        raise ValueError("File ID or picture input file must be provided!")
+
     def build_file_url(_api_token: str, file_path: str) -> str:
         return f"https://api.telegram.org/file/bot{_api_token}/{file_path}"
 
@@ -52,8 +59,8 @@ async def create_new_sticker_set(
         telegram_user: TelegramUser,
         telegram_user_username: str,
         user: UserModel,
+        emojis: str,
         sticker_file_input: StickerFileInput,
-        emoji: str,
 ) -> None:
     def build_sticker_set_title(_sticker_set_type: StickerSetType, username: str) -> str:
         if _sticker_set_type == StickerSetType.ANIMATED:
@@ -96,7 +103,7 @@ async def create_new_sticker_set(
         user_id=telegram_user.id,
         name=sticker_set.name,
         title=sticker_set.title,
-        emojis=emoji,
+        emojis=emojis,
         **sticker_file_input,
     )
 
@@ -134,12 +141,12 @@ async def handle_sticker_addition(
         user_sticker_set: StickerSetModel,
         telegram_user: TelegramUser,
         sticker_file_input: StickerFileInput,
-        emoji: str,
+        emojis: str,
 ) -> None:
     await bot.add_sticker_to_set(
         user_id=telegram_user.id,
         name=user_sticker_set.name,
-        emojis=emoji,
+        emojis=emojis,
         **sticker_file_input,
     )
 

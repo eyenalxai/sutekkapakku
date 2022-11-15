@@ -4,7 +4,7 @@ from typing import Optional
 from aiogram import Dispatcher, Bot, F as MagicFilter, Router
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import SimpleEventIsolation
-from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize
+from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize, BufferedInputFile
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.app import API_TOKEN, ADMIN_TELEGRAM_ID, WEBHOOK, POLL_TYPE, POLLING
 from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerSetType
+from util.photo import get_resized_image_bytes
 from util.query.user import get_user_by_telegram_id, save_user
 from util.session_middleware import get_async_database_session, filter_non_sticker, filter_non_user, filter_no_caption, \
     get_user_sticker_set_async_session
@@ -74,7 +75,7 @@ async def handle_sticker(
             user=user,
             sticker_set_type=sticker_set_type,
             sticker_file_input=sticker_file_input,
-            emoji=sticker_emoji,
+            emojis=sticker_emoji,
         )
 
     if message_sticker.set_name == sticker_set.name:
@@ -89,7 +90,7 @@ async def handle_sticker(
         message=message,
         user_sticker_set=sticker_set,
         telegram_user=telegram_user,
-        emoji=sticker_emoji,
+        emojis=sticker_emoji,
         sticker_file_input=sticker_file_input,
     )
 
@@ -104,9 +105,40 @@ async def handle_picture(
         telegram_user: TelegramUser,
         telegram_user_username: str,
         picture: PhotoSize,
-        emoji_list: list[str]
+        emojis: str
 ) -> None:
-    await message.reply("Picture!")
+    resized_picture: bytes = await get_resized_image_bytes(bot=bot, picture=picture)
+
+    picture_input_file = BufferedInputFile(resized_picture, filename=picture.file_unique_id + ".png")
+
+    sticker_file_input = await get_sticker_file_input(
+        bot=bot,
+        api_token=API_TOKEN,
+        sticker_set_type=sticker_set_type,
+        picture_input_file=picture_input_file
+    )
+
+    if not sticker_set:
+        return await create_new_sticker_set(
+            bot=bot,
+            message=message,
+            async_session=async_session,
+            telegram_user=telegram_user,
+            telegram_user_username=telegram_user_username,
+            user=user,
+            sticker_set_type=sticker_set_type,
+            sticker_file_input=sticker_file_input,
+            emojis=emojis,
+        )
+
+    return await handle_sticker_addition(
+        bot=bot,
+        message=message,
+        user_sticker_set=sticker_set,
+        telegram_user=telegram_user,
+        emojis=emojis,
+        sticker_file_input=sticker_file_input,
+    )
 
 
 async def on_startup() -> None:

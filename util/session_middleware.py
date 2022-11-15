@@ -124,6 +124,6 @@ async def filter_no_caption(
     largest_photo = get_largest_picture(message.photo)
 
     data["picture"] = largest_photo
-    data["emoji_list"] = emoji_list
+    data["emojis"] = "".join(emoji_list)
 
     return await handler(message, data)

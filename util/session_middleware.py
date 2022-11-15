@@ -5,7 +5,9 @@ from aiogram.types import Message
 from config.database_engine import async_session_maker
 from config.log import logger
 from model.models import UserModel, StickerSetModel
-from util.query.sticker_set import get_sticker_set_by_user_and_type
+from util.emoji import get_emoji_list
+from util.photo import get_largest_picture
+from util.query.sticker_set import get_sticker_set_by_user_and_type, get_sticker_set_type_from_message
 from util.query.user import get_user_by_telegram_id
 
 
@@ -38,7 +40,46 @@ async def filter_non_user(
     return await handler(message, data)
 
 
-async def get_sticker_stuff_and_filter_stuff(
+async def get_user_sticker_set_async_session(
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+        message: Message,
+        data: Dict[str, Any],
+) -> Any:
+    if not message.from_user:
+        return None
+
+    if not message.sticker and not message.photo:
+        return None
+
+    async with async_session_maker() as async_session:
+        async with async_session.begin():
+            user: Optional[UserModel] = await get_user_by_telegram_id(
+                async_session=async_session,
+                telegram_id=message.from_user.id
+            )
+
+            if not user:
+                await message.reply(
+                    "You are not registered yet.\n"
+                    "Please use /start command.."
+                )
+                return
+
+            sticker_set_type = get_sticker_set_type_from_message(message=message)
+
+            sticker_set: Optional[StickerSetModel] = await get_sticker_set_by_user_and_type(
+                async_session=async_session, user=user, sticker_set_type=sticker_set_type
+            )
+
+            data["async_session"] = async_session
+            data["user"] = user
+            data["sticker_set_type"] = sticker_set_type
+            data["sticker_set"] = sticker_set
+
+            return await handler(message, data)
+
+
+async def filter_non_sticker(
         handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
         message: Message,
         data: Dict[str, Any],
@@ -56,29 +97,33 @@ async def get_sticker_stuff_and_filter_stuff(
             f"Sticker has no emoji! User: {message.from_user.full_name} - @{message.from_user.username or 'None'}")
         return None
 
-    async with async_session_maker() as async_session:
-        async with async_session.begin():
-            user: Optional[UserModel] = await get_user_by_telegram_id(
-                async_session=async_session,
-                telegram_id=message.from_user.id
-            )
+    data["message_sticker"] = message.sticker
+    data["sticker_emoji"] = message.sticker.emoji
 
-            if not user:
-                await message.reply(
-                    "You are not registered yet.\n"
-                    "Please use /start command.."
-                )
-                return
+    return await handler(message, data)
 
-            sticker_set: Optional[StickerSetModel] = await get_sticker_set_by_user_and_type(
-                async_session=async_session, user=user, sticker=message.sticker
-            )
 
-            data["async_session"] = async_session
-            data["user"] = user
-            data["sticker_set"] = sticker_set
+async def filter_no_caption(
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+        message: Message,
+        data: Dict[str, Any],
+) -> Any:
+    if not message.photo:
+        return None
 
-            data["message_sticker"] = message.sticker
-            data["sticker_emoji"] = message.sticker.emoji
+    if not message.caption:
+        await message.reply("Please add a caption with an emojis to your picture.")
+        return None
 
-            return await handler(message, data)
+    emoji_list = get_emoji_list(text=message.caption)
+
+    if len(emoji_list) == 0:
+        await message.reply("Please add a caption with an emojis to your picture.")
+        return None
+
+    largest_photo = get_largest_picture(message.photo)
+
+    data["picture"] = largest_photo
+    data["emoji_list"] = emoji_list
+
+    return await handler(message, data)

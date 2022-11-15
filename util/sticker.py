@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.app import ADMIN_TELEGRAM_ID, PROD_ENV_NAME, ENVIRONMENT
 from config.log import logger
 from model.models import StickerSetModel, UserModel, StickerSetType
-from util.query.sticker_set import create_sticker_set, get_sticker_set_type_from_sticker
+from util.query.sticker_set import create_sticker_set
 
 
 class StickerFileInput(TypedDict, total=False):
@@ -20,13 +20,13 @@ class StickerFileInput(TypedDict, total=False):
 
 
 async def get_sticker_file_input(
-        bot: Bot, api_token: str, sticker_set_type: StickerSetType, sticker: Sticker
+        bot: Bot, api_token: str, sticker_set_type: StickerSetType, file_id: str
 ) -> StickerFileInput:
     def build_file_url(_api_token: str, file_path: str) -> str:
         return f"https://api.telegram.org/file/bot{_api_token}/{file_path}"
 
     if sticker_set_type == StickerSetType.ANIMATED or sticker_set_type == StickerSetType.VIDEO:
-        file: File = await bot.get_file(file_id=sticker.file_id)
+        file: File = await bot.get_file(file_id=file_id)
 
         if not file.file_path:
             raise ValueError("File path is oof.")
@@ -41,18 +41,18 @@ async def get_sticker_file_input(
         if sticker_set_type == StickerSetType.VIDEO:
             return StickerFileInput(webm_sticker=url_input_file)
 
-    return StickerFileInput(png_sticker=sticker.file_id)
+    return StickerFileInput(png_sticker=file_id)
 
 
 async def create_new_sticker_set(
         bot: Bot,
-        api_token: str,
         message: Message,
-        sticker: Sticker,
+        sticker_set_type: StickerSetType,
         async_session: AsyncSession,
         telegram_user: TelegramUser,
         telegram_user_username: str,
         user: UserModel,
+        sticker_file_input: StickerFileInput,
         emoji: str,
 ) -> None:
     def build_sticker_set_title(_sticker_set_type: StickerSetType, username: str) -> str:
@@ -79,8 +79,6 @@ async def create_new_sticker_set(
     if not bot_username:
         raise ValueError("Bot username is not set!")
 
-    sticker_set_type = get_sticker_set_type_from_sticker(sticker=sticker)
-
     sticker_set_title = build_sticker_set_title(_sticker_set_type=sticker_set_type, username=telegram_user_username)
 
     sticker_pack_prefix: str = build_sticker_set_prefix(_telegram_user_username=telegram_user_username)
@@ -89,13 +87,9 @@ async def create_new_sticker_set(
     sticker_set = await create_sticker_set(
         async_session=async_session,
         user=user,
-        sticker=sticker,
+        sticker_set_type=sticker_set_type,
         name=sticker_set_name,
         title=sticker_set_title,
-    )
-
-    sticker_file_input: StickerFileInput = await get_sticker_file_input(
-        bot=bot, api_token=api_token, sticker_set_type=sticker_set_type, sticker=sticker
     )
 
     await bot.create_new_sticker_set(
@@ -136,19 +130,12 @@ async def handle_sticker_removal(
 
 async def handle_sticker_addition(
         bot: Bot,
-        api_token: str,
         message: Message,
         user_sticker_set: StickerSetModel,
-        sticker: Sticker,
         telegram_user: TelegramUser,
+        sticker_file_input: StickerFileInput,
         emoji: str,
 ) -> None:
-    sticker_set_type = get_sticker_set_type_from_sticker(sticker=sticker)
-
-    sticker_file_input: StickerFileInput = await get_sticker_file_input(
-        bot=bot, api_token=api_token, sticker_set_type=sticker_set_type, sticker=sticker
-    )
-
     await bot.add_sticker_to_set(
         user_id=telegram_user.id,
         name=user_sticker_set.name,

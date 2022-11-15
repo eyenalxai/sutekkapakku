@@ -4,24 +4,27 @@ from typing import Optional
 from aiogram import Dispatcher, Bot, F as MagicFilter, Router
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import SimpleEventIsolation
-from aiogram.types import Message, User as TelegramUser, Sticker
+from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.app import API_TOKEN, ADMIN_TELEGRAM_ID, WEBHOOK, POLL_TYPE, POLLING
 from config.log import logger
-from model.models import UserModel, StickerSetModel
+from model.models import UserModel, StickerSetModel, StickerSetType
 from util.query.user import get_user_by_telegram_id, save_user
-from util.session_middleware import get_async_database_session, get_sticker_stuff_and_filter_stuff, filter_non_user
-from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition
+from util.session_middleware import get_async_database_session, filter_non_sticker, filter_non_user, filter_no_caption, \
+    get_user_sticker_set_async_session
+from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition, get_sticker_file_input
 from util.webhook import configure_webhook, get_webhook_url
 
 bot = Bot(API_TOKEN, parse_mode="HTML")
 
 dp = Dispatcher(events_isolation=SimpleEventIsolation())
-start_router = Router()
-sticker_router = Router()
+
+start_router = Router(name="start router")
+sticker_router = Router(name="sticker router")
+picture_router = Router(name="picture router")
 
 
 @start_router.message(Command("start"))
@@ -48,21 +51,29 @@ async def handle_sticker(
         async_session: AsyncSession,
         user: UserModel,
         sticker_set: Optional[StickerSetModel],
+        sticker_set_type: StickerSetType,
         telegram_user: TelegramUser,
         telegram_user_username: str,
         message_sticker: Sticker,
         sticker_emoji: str
 ) -> None:
+    sticker_file_input = await get_sticker_file_input(
+        bot=bot,
+        api_token=API_TOKEN,
+        sticker_set_type=sticker_set_type,
+        file_id=message_sticker.file_id
+    )
+
     if not sticker_set:
         return await create_new_sticker_set(
             bot=bot,
-            api_token=API_TOKEN,
             message=message,
-            sticker=message_sticker,
             async_session=async_session,
             telegram_user=telegram_user,
             telegram_user_username=telegram_user_username,
             user=user,
+            sticker_set_type=sticker_set_type,
+            sticker_file_input=sticker_file_input,
             emoji=sticker_emoji,
         )
 
@@ -75,13 +86,27 @@ async def handle_sticker(
 
     return await handle_sticker_addition(
         bot=bot,
-        api_token=API_TOKEN,
         message=message,
         user_sticker_set=sticker_set,
-        sticker=message_sticker,
         telegram_user=telegram_user,
         emoji=sticker_emoji,
+        sticker_file_input=sticker_file_input,
     )
+
+
+@picture_router.message(MagicFilter.photo)
+async def handle_picture(
+        message: Message,
+        async_session: AsyncSession,
+        user: UserModel,
+        sticker_set: StickerSetModel,
+        sticker_set_type: StickerSetType,
+        telegram_user: TelegramUser,
+        telegram_user_username: str,
+        picture: PhotoSize,
+        emoji_list: list[str]
+) -> None:
+    await message.reply("Picture!")
 
 
 async def on_startup() -> None:
@@ -99,13 +124,20 @@ async def on_shutdown() -> None:
 def main() -> None:
     dp.include_router(start_router)
     dp.include_router(sticker_router)
+    dp.include_router(picture_router)
 
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
 
     dp.message.middleware(filter_non_user)  # type: ignore
+
     start_router.message.middleware(get_async_database_session)  # type: ignore
-    sticker_router.message.middleware(get_sticker_stuff_and_filter_stuff)  # type: ignore
+
+    sticker_router.message.middleware(filter_non_sticker)  # type: ignore
+    sticker_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
+
+    picture_router.message.middleware(filter_no_caption)  # type: ignore
+    picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
 
     if POLL_TYPE == WEBHOOK:
         sleeping_time, webhook_path, port = configure_webhook()

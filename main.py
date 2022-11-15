@@ -44,10 +44,10 @@ async def command_start_handler(message: Message, async_session: AsyncSession, t
 
     if not user:
         await save_user(async_session=async_session, telegram_user=telegram_user)
-        await message.reply(f"Welcome, {telegram_user.full_name}!\n\n{text}", parse_mode="HTML")
+        await message.reply(text=f"Welcome, {telegram_user.full_name}!\n\n{text}", parse_mode="HTML")
         return
 
-    await message.reply(f"Hello, {telegram_user.full_name}!\n\n{text}")
+    await message.reply(text=f"Hello, {telegram_user.full_name}!\n\n{text}")
 
 
 @sticker_router.message(MagicFilter.sticker)

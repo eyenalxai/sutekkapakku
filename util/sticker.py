@@ -128,7 +128,7 @@ async def handle_sticker_removal(
                 "If it is, please contact me!\n\n"
                 f"<a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>"
             )
-            await message.reply(text=text, parse_mode="HTML", )
+            await message.reply(text=text, parse_mode="HTML")
     else:
         await message.reply("Sticker removed from the pack. It may take a few minutes for sticker pack to update.")
 

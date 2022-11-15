@@ -125,7 +125,8 @@ async def handle_sticker_removal(
                 "It seems like you tried to remove a sticker from the pack, "
                 "but it wasn't in the pack due to a bug in Telegram, most likely. "
                 "Please wait 15 minutes and check if sticker is in your pack still.\n"
-                f"If it is, please contact me. <a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>",
+                "If it is, please contact me!\n\n"
+                f"<a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>",
                 parse_mode="HTML",
             )
     else:

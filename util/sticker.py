@@ -7,7 +7,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInputFile, BufferedInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.app import ADMIN_TELEGRAM_ID, PROD_ENV_NAME, ENVIRONMENT
+from config.app import ADMIN_USERNAME, PROD_ENV_NAME, ENVIRONMENT
 from config.log import logger
 from model.models import StickerSetModel, UserModel, StickerSetType
 from util.query.sticker_set import create_sticker_set
@@ -126,7 +126,7 @@ async def handle_sticker_removal(
                 "but it wasn't in the pack due to a bug in Telegram, most likely. "
                 "Please wait 15 minutes and check if sticker is in your pack still.\n"
                 "If it is, please contact me!\n\n"
-                f"<a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>"
+                f"<a href='https://t.me/{ADMIN_USERNAME}'>Contact</a>"
             )
             await message.reply(text=text, parse_mode="HTML")
     else:

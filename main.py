@@ -14,8 +14,9 @@ from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerSetType
 from util.photo import get_picture_buffered_input
 from util.query.user import get_user_by_telegram_id, save_user
-from util.session_middleware import get_async_database_session, filter_non_sticker, filter_non_user, filter_no_caption, \
-    get_user_sticker_set_async_session
+from util.session_middleware import get_async_database_session, filter_non_sticker, filter_non_user, \
+    filter_no_emoji_caption, \
+    get_user_sticker_set_async_session, filter_non_photo
 from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition, \
     get_sticker_file_input_from_picture, get_sticker_file_input_from_sticker
 from util.webhook import configure_webhook, get_webhook_url
@@ -107,7 +108,7 @@ async def handle_picture(
         telegram_user: TelegramUser,
         telegram_user_username: str,
         picture: PhotoSize,
-        emojis: str
+        emoji: str
 ) -> None:
     picture_buffered_input: BufferedInputFile = await get_picture_buffered_input(bot=bot, picture=picture)
 
@@ -125,7 +126,7 @@ async def handle_picture(
             user=user,
             sticker_set_type=sticker_set_type,
             sticker_file_input=sticker_file_input,
-            emojis=emojis,
+            emojis=emoji,
         )
 
     return await handle_sticker_addition(
@@ -133,7 +134,7 @@ async def handle_picture(
         message=message,
         user_sticker_set=sticker_set,
         telegram_user=telegram_user,
-        emojis=emojis,
+        emojis=emoji,
         sticker_file_input=sticker_file_input,
     )
 
@@ -165,7 +166,8 @@ def main() -> None:
     sticker_router.message.middleware(filter_non_sticker)  # type: ignore
     sticker_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
 
-    picture_router.message.middleware(filter_no_caption)  # type: ignore
+    picture_router.message.middleware(filter_non_photo)  # type: ignore
+    picture_router.message.middleware(filter_no_emoji_caption)  # type: ignore
     picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
 
     if POLL_TYPE == WEBHOOK:

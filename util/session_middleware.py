@@ -5,7 +5,6 @@ from aiogram.types import Message
 from config.database_engine import async_session_maker
 from config.log import logger
 from model.models import UserModel, StickerSetModel
-from util.emoji import get_emoji_list
 from util.photo import get_largest_picture
 from util.query.sticker_set import get_sticker_set_by_user_and_type, get_sticker_set_type_from_message
 from util.query.user import get_user_by_telegram_id
@@ -28,6 +27,7 @@ async def filter_non_user(
         data: Dict[str, Any],
 ) -> Any:
     if not message.from_user:
+        logger.error(f"No user in message?! Message: {message}")
         return None
 
     if not message.from_user.username:
@@ -88,12 +88,12 @@ async def filter_non_sticker(
         return None
 
     if not message.sticker:
-        logger.warning(
+        logger.error(
             f"No sticker in message?! User: {message.from_user.full_name} - @{message.from_user.username or 'None'}")
         return
 
     if not message.sticker.emoji:
-        logger.warning(
+        logger.error(
             f"Sticker has no emoji! User: {message.from_user.full_name} - @{message.from_user.username or 'None'}")
         return None
 
@@ -103,27 +103,44 @@ async def filter_non_sticker(
     return await handler(message, data)
 
 
-async def filter_no_caption(
+async def filter_no_emoji_caption(
         handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
         message: Message,
         data: Dict[str, Any],
 ) -> Any:
-    if not message.photo:
-        return None
+    def get_emoji_list(text: str) -> list[str]:
+        return distinct_emoji_list(text)  # type: ignore
 
     if not message.caption:
-        await message.reply("Please add a caption with an emojis to your picture.")
+        await message.reply("Please add a caption with an emoji to your picture (e.g. 🥰)")
         return None
 
     emoji_list = get_emoji_list(text=message.caption)
 
-    if len(emoji_list) == 0:
-        await message.reply("Please add a caption with an emojis to your picture.")
+    if len(emoji_list) < 1:
+        await message.reply("Your caption does not contain an emoji 🥲")
         return None
 
-    largest_photo = get_largest_picture(message.photo)
+    data["emoji"] = emoji_list[0]
+
+    return await handler(message, data)
+
+
+async def filter_non_photo(
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+        message: Message,
+        data: Dict[str, Any],
+) -> Any:
+    if not message.from_user or not message.from_user.username:
+        return None
+
+    if not message.photo:
+        logger.error(
+            f"No photo in message?! User: {message.from_user.full_name} - @{message.from_user.username}"
+        )
+        return None
+
+    largest_photo = get_largest_picture(pictures=message.photo)
 
     data["picture"] = largest_photo
-    data["emojis"] = "".join(emoji_list)
-
     return await handler(message, data)

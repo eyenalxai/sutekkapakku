@@ -121,14 +121,14 @@ async def handle_sticker_removal(
     except TelegramBadRequest as e:
         if "STICKERSET_NOT_MODIFIED" in e.message:
             logger.warning(f"User tried to remove sticker from set, but it wasn't in the set.")
-            await message.reply(
+            text = (
                 "It seems like you tried to remove a sticker from the pack, "
                 "but it wasn't in the pack due to a bug in Telegram, most likely. "
                 "Please wait 15 minutes and check if sticker is in your pack still.\n"
                 "If it is, please contact me!\n\n"
-                f"<a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>",
-                parse_mode="HTML",
+                f"<a href='tg://user?id={ADMIN_TELEGRAM_ID}'>Contact</a>"
             )
+            await message.reply(text=text, parse_mode="HTML", )
     else:
         await message.reply("Sticker removed from the pack. It may take a few minutes for sticker pack to update.")
 

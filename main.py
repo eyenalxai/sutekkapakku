@@ -59,6 +59,13 @@ async def handle_sticker(
         message_sticker: Sticker,
         sticker_emoji: str
 ) -> None:
+    if sticker_set and message_sticker.set_name == sticker_set.name:
+        return await handle_sticker_removal(
+            bot=bot,
+            message=message,
+            received_sticker=message_sticker,
+        )
+
     sticker_file_input = await get_sticker_file_input_from_sticker(
         bot=bot,
         api_token=API_TOKEN,
@@ -77,13 +84,6 @@ async def handle_sticker(
             sticker_set_type=sticker_set_type,
             sticker_file_input=sticker_file_input,
             emojis=sticker_emoji,
-        )
-
-    if message_sticker.set_name == sticker_set.name:
-        return await handle_sticker_removal(
-            bot=bot,
-            message=message,
-            received_sticker=message_sticker,
         )
 
     return await handle_sticker_addition(

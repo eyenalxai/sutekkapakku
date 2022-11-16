@@ -175,12 +175,15 @@ def main() -> None:
     picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
 
     if POLL_TYPE == WEBHOOK:
+        from aiohttp_healthcheck import HealthCheck  # type: ignore
+        health = HealthCheck()
         webhook_path, port = configure_webhook()
 
         app = web.Application()
         SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=webhook_path)
         setup_application(app, dp, bot=bot)
 
+        app.add_routes([web.get("/health", health)])
         web.run_app(app, host="0.0.0.0", port=port)
 
     if POLL_TYPE == POLLING:

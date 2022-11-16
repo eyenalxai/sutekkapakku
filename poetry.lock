@@ -55,6 +55,17 @@ yarl = ">=1.0,<2.0"
 speedups = ["Brotli", "aiodns", "cchardet"]
 
 [[package]]
+name = "aiohttp-healthcheck"
+version = "1.3.1"
+description = "Adds healthcheck endpoints to aiohttp apps. Based on https://github.com/Runscope/healthcheck."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+aiohttp = ">=1.1.1"
+
+[[package]]
 name = "aiosignal"
 version = "1.3.1"
 description = "aiosignal: a list of registered asynchronous callbacks"
@@ -401,7 +412,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "b2debcf8a061b241c79cd6626853871a197d7f6b669bb7d0fd2b0b5f05a6c0ea"
+content-hash = "e166c44f5ffff6de644c7db49cb31a52e43f14afd30e7fc2a8eb428ce7907021"
 
 [metadata.files]
 aiofiles = [
@@ -497,6 +508,9 @@ aiohttp = [
     { file = "aiohttp-3.8.3-cp39-cp39-win32.whl", hash = "sha256:f178d2aadf0166be4df834c4953da2d7eef24719e8aec9a65289483eeea9d618" },
     { file = "aiohttp-3.8.3-cp39-cp39-win_amd64.whl", hash = "sha256:88e5be56c231981428f4f506c68b6a46fa25c4123a2e86d156c58a8369d31ab7" },
     { file = "aiohttp-3.8.3.tar.gz", hash = "sha256:3828fb41b7203176b82fe5d699e0d845435f2374750a44b480ea6b930f6be269" },
+]
+aiohttp-healthcheck = [
+    { file = "aiohttp_healthcheck-1.3.1.tar.gz", hash = "sha256:f956c6163704f4c27562a554e801ca4c407c3362a4386f5990dad2f1d1bfd5c1" },
 ]
 aiosignal = [
     { file = "aiosignal-1.3.1-py3-none-any.whl", hash = "sha256:f8376fb07dd1e86a584e4fcdec80b36b7f81aac666ebc724e2c090300dd83b17" },

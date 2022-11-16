@@ -8,7 +8,6 @@ from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInput
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.app import ADMIN_USERNAME, PROD_ENV_NAME, ENVIRONMENT
-from config.log import logger
 from model.models import StickerSetModel, UserModel, StickerSetType
 from util.query.sticker_set import create_sticker_set
 
@@ -120,7 +119,6 @@ async def handle_sticker_removal(
         await bot.delete_sticker_from_set(sticker=received_sticker.file_id)
     except TelegramBadRequest as e:
         if "STICKERSET_NOT_MODIFIED" in e.message:
-            logger.warning(f"User tried to remove sticker from set, but it wasn't in the set.")
             text = (
                 "It seems like you tried to remove a sticker from the pack, "
                 "but it wasn't in the pack due to a bug in Telegram, most likely. "

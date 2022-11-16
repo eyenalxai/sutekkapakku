@@ -4,7 +4,7 @@ from string import ascii_letters
 
 def get_main_bot_path() -> str:
     from config.webhook import MAIN_BOT_PATH
-    random_string = "".join(choices(ascii_letters, k=8))
+    random_string = "".join(choices(ascii_letters, k=6))
 
     return f"{MAIN_BOT_PATH}_{random_string}"
 

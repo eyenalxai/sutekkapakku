@@ -144,19 +144,12 @@ async def on_startup() -> None:
         await bot.set_webhook(webhook_url)
 
 
-async def on_shutdown() -> None:
-    if POLL_TYPE == WEBHOOK:
-        await bot.session.close()
-        await bot.delete_webhook()
-
-
 def main() -> None:
     dp.include_router(start_router)
     dp.include_router(sticker_router)
     dp.include_router(picture_router)
 
     dp.startup.register(on_startup)
-    dp.shutdown.register(on_shutdown)
 
     dp.message.middleware(filter_non_user)  # type: ignore
 

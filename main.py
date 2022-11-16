@@ -171,9 +171,7 @@ def main() -> None:
     picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
 
     if POLL_TYPE == WEBHOOK:
-        sleeping_time, webhook_path, port = configure_webhook()
-        logger.info(f"Sleeping for {sleeping_time} seconds...")
-        # sleep(sleeping_time)
+        webhook_path, port = configure_webhook()
 
         app = web.Application()
         SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=webhook_path)

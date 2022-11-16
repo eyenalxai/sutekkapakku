@@ -4,8 +4,7 @@ def get_webhook_url() -> str:
     return f"https://{DOMAIN}{MAIN_BOT_PATH}"
 
 
-def configure_webhook() -> tuple[int, str, int]:
-    from config.app import SLEEPING_TIME
+def configure_webhook() -> tuple[str, int]:
     from config.webhook import PORT, MAIN_BOT_PATH
 
-    return SLEEPING_TIME, MAIN_BOT_PATH, PORT
+    return MAIN_BOT_PATH, PORT

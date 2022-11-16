@@ -1,4 +1,3 @@
-from time import sleep
 from typing import Optional
 
 from aiogram import Dispatcher, Bot, F as MagicFilter, Router
@@ -186,8 +185,6 @@ def main() -> None:
 
         app.add_routes([web.get("/health", health)])
 
-        logger.info(f"Sleeping for 60 seconds")
-        sleep(60)
         web.run_app(app, host="0.0.0.0", port=port)
 
     if POLL_TYPE == POLLING:

@@ -1,9 +1,13 @@
-from random import choices
+from random import choices, seed
 from string import ascii_letters
+
+from config.webhook import RANDOM_SEED
 
 
 def get_main_bot_path() -> str:
     from config.webhook import MAIN_BOT_PATH
+
+    seed(RANDOM_SEED)
     random_string = "".join(choices(ascii_letters, k=6))
 
     return f"{MAIN_BOT_PATH}_{random_string}"

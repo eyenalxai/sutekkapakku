@@ -146,4 +146,8 @@ async def handle_sticker_addition(
         **sticker_file_input,
     )
 
-    await message.reply("Sticker added to the pack.")
+    await message.reply(
+        "Sticker added to the pack.\n\n"
+        f"Link: <a href='https://t.me/addstickers/{user_sticker_set.name}'>{user_sticker_set.title}</a>",
+        parse_mode="HTML",
+    )

@@ -150,9 +150,9 @@ async def on_shutdown() -> None:
     if POLL_TYPE == WEBHOOK:
         await bot.delete_webhook()
         logger.info("Webhook deleted")
+
         await bot.session.close()
         logger.info("Bot session closed")
-        logger.info("Awooga #2")
 
 
 def main() -> None:

@@ -9,6 +9,7 @@ from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.app import API_TOKEN, WEBHOOK, POLL_TYPE, POLLING, ADMIN_USERNAME
+from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerSetType
 from util.photo import get_picture_buffered_input
 from util.query.user import get_user_by_telegram_id, save_user
@@ -142,6 +143,7 @@ async def on_startup() -> None:
     if POLL_TYPE == WEBHOOK:
         webhook_url = get_webhook_url()
         await bot.set_webhook(webhook_url)
+        logger.info(f"Webhook set to: {webhook_url}")
 
 
 def main() -> None:

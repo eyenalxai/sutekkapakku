@@ -1,6 +1,7 @@
 from typing import Optional
 
 from aiogram import Dispatcher, Bot, F as MagicFilter, Router
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize, BufferedInputFile
@@ -20,7 +21,8 @@ from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_
     get_sticker_file_input_from_picture, get_sticker_file_input_from_sticker
 from util.webhook import configure_webhook, get_webhook_url
 
-bot = Bot(API_TOKEN, parse_mode="HTML")
+session = AiohttpSession()
+bot = Bot(API_TOKEN, parse_mode="HTML", session=session)
 
 dp = Dispatcher(events_isolation=SimpleEventIsolation())
 
@@ -147,12 +149,7 @@ async def on_startup() -> None:
 
 
 async def on_shutdown() -> None:
-    if POLL_TYPE == WEBHOOK:
-        await bot.delete_webhook()
-        logger.info("Webhook deleted")
-
-        await bot.session.close()
-        logger.info("Bot session closed")
+    logger.info("Shutting down...")
 
 
 def main() -> None:
@@ -177,6 +174,7 @@ def main() -> None:
     if POLL_TYPE == WEBHOOK:
         from aiohttp_healthcheck import HealthCheck  # type: ignore
         health = HealthCheck()
+
         webhook_path, port = configure_webhook()
 
         app = web.Application()

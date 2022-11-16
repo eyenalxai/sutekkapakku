@@ -1,4 +1,6 @@
 from os import getenv
+from random import choices
+from string import ascii_letters
 
 API_TOKEN: str = getenv("API_TOKEN", "NONE")
 assert API_TOKEN != "NONE", "API_TOKEN is not set"
@@ -17,3 +19,5 @@ assert ENVIRONMENT in [DEV_ENV_NAME, PROD_ENV_NAME], "ENVIRONMENT is not set"
 
 ADMIN_USERNAME = getenv("ADMIN_USERNAME", "NONE")
 assert ADMIN_USERNAME != "NONE", "ADMIN_USERNAME is not set"
+
+RANDOM_SEED = "".join(choices(ascii_letters, k=12))

@@ -1,4 +1,3 @@
-from time import sleep
 from typing import Optional
 
 from aiogram import Dispatcher, Bot, F as MagicFilter, Router
@@ -174,7 +173,7 @@ def main() -> None:
     if POLL_TYPE == WEBHOOK:
         sleeping_time, webhook_path, port = configure_webhook()
         logger.info(f"Sleeping for {sleeping_time} seconds...")
-        sleep(sleeping_time)
+        # sleep(sleeping_time)
 
         app = web.Application()
         SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=webhook_path)

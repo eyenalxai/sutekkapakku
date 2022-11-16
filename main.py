@@ -152,7 +152,7 @@ async def on_shutdown() -> None:
         logger.info("Webhook deleted")
         await bot.session.close()
         logger.info("Bot session closed")
-        logger.info("Awooga")
+        logger.info("Awooga #2")
 
 
 def main() -> None:

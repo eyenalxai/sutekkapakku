@@ -183,7 +183,7 @@ def main() -> None:
 
         app.add_routes([web.get("/health", health)])
 
-        web.run_app(app, host="127.0.0.1", port=port)
+        web.run_app(app, host="0.0.0.0", port=port)
 
     if POLL_TYPE == POLLING:
         dp.run_polling(bot, skip_updates=True)

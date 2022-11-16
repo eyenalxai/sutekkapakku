@@ -9,7 +9,6 @@ from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.app import API_TOKEN, WEBHOOK, POLL_TYPE, POLLING, ADMIN_USERNAME
-from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerSetType
 from util.photo import get_picture_buffered_input
 from util.query.user import get_user_by_telegram_id, save_user
@@ -176,7 +175,6 @@ def main() -> None:
         app = web.Application()
         SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=webhook_path)
         setup_application(app, dp, bot=bot)
-        logger.info(f"Port: {port}")
 
         web.run_app(app, host="0.0.0.0", port=port)
 

@@ -2,8 +2,9 @@ from typing import Any, Dict, Awaitable, Callable, Optional
 
 from aiogram.types import Message
 from emoji import distinct_emoji_list
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database_engine import async_session_maker
+from config.database_engine import async_engine
 from config.log import logger
 from model.models import UserModel, StickerSetModel
 from util.photo import get_largest_picture
@@ -16,7 +17,7 @@ async def get_async_database_session(
         message: Message,
         data: Dict[str, Any],
 ) -> Any:
-    async with async_session_maker() as async_session:
+    async with AsyncSession(bind=async_engine) as async_session:
         async with async_session.begin():
             data["async_session"] = async_session
             return await handler(message, data)
@@ -52,7 +53,7 @@ async def get_user_sticker_set_async_session(
     if not message.sticker and not message.photo:
         return None
 
-    async with async_session_maker() as async_session:
+    async with AsyncSession(bind=async_engine) as async_session:
         async with async_session.begin():
             user: Optional[UserModel] = await get_user_by_telegram_id(
                 async_session=async_session,

@@ -1,7 +1,9 @@
 from typing import Any, Dict, Awaitable, Callable, Optional
 
 from aiogram.types import Message
+from asyncpg import ConnectionDoesNotExistError  # type: ignore
 from emoji import distinct_emoji_list
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database_engine import async_engine
@@ -17,10 +19,19 @@ async def get_async_database_session(
         message: Message,
         data: Dict[str, Any],
 ) -> Any:
-    async with AsyncSession(bind=async_engine) as async_session:
-        async with async_session.begin():
-            data["async_session"] = async_session
-            return await handler(message, data)
+    try:
+        async with AsyncSession(bind=async_engine) as async_session:
+            async with async_session.begin():
+                data["async_session"] = async_session
+                return await handler(message, data)
+    except DBAPIError as e:
+        logger.error(f"DBAPIError error: {e}")
+        await message.reply("An error occurred. Please try again.")
+        return None
+    except ConnectionDoesNotExistError as e:
+        logger.error(f"ConnectionDoesNotExistError error: {e}")
+        await message.reply("An error occurred. Please try again.")
+        return None
 
 
 async def filter_non_user(

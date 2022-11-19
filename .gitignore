@@ -109,3 +109,4 @@ dmypy.json
 cython_debug/
 .env_dev
 /.env_prod
+.DS_Store

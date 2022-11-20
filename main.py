@@ -10,6 +10,7 @@ from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from model.models import UserModel, StickerSetModel, StickerSetType
+from settings_reader import PollType
 from util.photo import get_picture_buffered_input
 from util.query.user import get_user_by_telegram_id, save_user
 from util.session_middleware import get_async_database_session, filter_non_sticker, filter_non_user, \
@@ -184,7 +185,7 @@ def main() -> None:
     picture_router.message.middleware(filter_no_emoji_caption)  # type: ignore
     picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
 
-    if settings.poll_type == 'WEBHOOK':
+    if settings.poll_type == PollType.WEBHOOK:
         from aiohttp_healthcheck import HealthCheck  # type: ignore
         health = HealthCheck()
 
@@ -196,7 +197,7 @@ def main() -> None:
 
         web.run_app(app, host="0.0.0.0", port=settings.port)
 
-    if settings.poll_type == 'POLLING':
+    if settings.poll_type == PollType.POLLING:
         dp.run_polling(bot, skip_updates=True)
 
 

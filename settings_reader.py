@@ -1,8 +1,14 @@
+from enum import Enum
 from functools import cached_property
 
 from pydantic import BaseSettings, Field, validator
 
 from util.random import random_letter_string
+
+
+class PollType(Enum):
+    WEBHOOK = "WEBHOOK"
+    POLLING = "POLLING"
 
 
 class Settings(BaseSettings):
@@ -14,7 +20,7 @@ class Settings(BaseSettings):
     database_url: str = Field(env='DATABASE_URL')
     domain: str = Field(env='DOMAIN')
     port: int = Field(env='PORT')
-    poll_type: str = Field(env='POLL_TYPE')
+    poll_type: PollType = Field(env='POLL_TYPE')
     environment: str = Field(env='ENVIRONMENT')
 
     @cached_property
@@ -39,11 +45,6 @@ class Settings(BaseSettings):
         assert not v.endswith('/'), 'DOMAIN must not end with slash'
         assert not v.startswith('http'), 'DOMAIN must not start with http'
         assert not v.startswith('https'), 'DOMAIN must not start with https'
-        return v
-
-    @validator('poll_type')
-    def poll_type_must_be_webhook_or_polling(cls, v: str) -> str:
-        assert v in ['WEBHOOK', 'POLLING'], 'POLL_TYPE must be WEBHOOK or POLLING'
         return v
 
     @validator('environment')

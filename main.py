@@ -147,7 +147,7 @@ async def handle_picture(
 async def on_startup(bot: Bot) -> None:
     from settings_reader import settings
 
-    if settings.poll_type == 'WEBHOOK':
+    if settings.poll_type == PollType.WEBHOOK:
         webhook_url = settings.webhook_url
         await bot.set_webhook(webhook_url)
         logging.info(f"Webhook set to: {webhook_url}")

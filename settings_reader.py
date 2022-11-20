@@ -1,4 +1,4 @@
-from random import seed
+from typing import Any, Optional
 
 from pydantic import BaseSettings, Field, validator
 
@@ -13,6 +13,23 @@ class Settings(BaseSettings):
     port: int = Field(env='PORT')
     poll_type: str = Field(env='POLL_TYPE')
     environment: str = Field(env='ENVIRONMENT')
+    main_bot_path: Optional[str] = None
+
+    # init
+    def __init__(self, **data: Any) -> None:
+        super().__init__(**data)
+        main_bot_path_initial = "/webhook/main"
+        random_string = random_letter_string(length=6)
+        self.main_bot_path = f"{main_bot_path_initial}_{random_string}"
+
+    @validator('main_bot_path')
+    def main_bot_path_validator(cls, v: Optional[str]) -> str:
+        if not v:
+            raise ValueError("main_bot_path is empty")
+
+        if not v.startswith('/'):
+            raise ValueError('main_bot_path must start with /')
+        return v
 
     @property
     def async_database_url(self) -> str:
@@ -22,15 +39,15 @@ class Settings(BaseSettings):
         return async_database_url
 
     @property
-    def main_bot_path(self) -> str:
-        main_bot_path_initial = "/webhook/main"
-        seed(self.port)
-        random_string = random_letter_string(length=6)
-        return f"{main_bot_path_initial}_{random_string}"
-
-    @property
     def webhook_url(self) -> str:
         return f"https://{self.domain}{self.main_bot_path}"
+
+    @validator('domain')
+    def domain_must_not_end_with_slash(cls, v: str) -> str:
+        assert not v.endswith('/'), 'DOMAIN must not end with slash'
+        assert not v.startswith('http'), 'DOMAIN must not start with http'
+        assert not v.startswith('https'), 'DOMAIN must not start with https'
+        return v
 
     @validator('poll_type')
     def poll_type_must_be_webhook_or_polling(cls, v: str) -> str:

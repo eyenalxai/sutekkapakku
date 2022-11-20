@@ -22,6 +22,8 @@ start_router = Router(name="start router")
 sticker_router = Router(name="sticker router")
 picture_router = Router(name="picture router")
 
+logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S")
+
 
 @start_router.message(Command("start", "help"))
 async def command_start_handler(

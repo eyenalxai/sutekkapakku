@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseSettings, Field, validator
 
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     port: int = Field(env='PORT')
     poll_type: str = Field(env='POLL_TYPE')
     environment: str = Field(env='ENVIRONMENT')
-    main_bot_path: Optional[str] = None
+    main_bot_path: str
 
     # init
     def __init__(self, **data: Any) -> None:

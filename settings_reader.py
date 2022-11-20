@@ -22,15 +22,6 @@ class Settings(BaseSettings):
         random_string = random_letter_string(length=6)
         self.main_bot_path = f"{main_bot_path_initial}_{random_string}"
 
-    @validator('main_bot_path')
-    def main_bot_path_validator(cls, v: Optional[str]) -> str:
-        if not v:
-            raise ValueError("main_bot_path is empty")
-
-        if not v.startswith('/'):
-            raise ValueError('main_bot_path must start with /')
-        return v
-
     @property
     def async_database_url(self) -> str:
         async_database_url = self.database_url.replace('postgresql://', 'postgresql+asyncpg://')

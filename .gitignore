@@ -110,3 +110,4 @@ cython_debug/
 .env_dev
 /.env_prod
 .DS_Store
+/.env_local

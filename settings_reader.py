@@ -1,3 +1,5 @@
+from random import seed
+
 from pydantic import BaseSettings, Field, validator
 
 from util.random import random_letter_string
@@ -22,7 +24,9 @@ class Settings(BaseSettings):
     @property
     def main_bot_path(self) -> str:
         main_bot_path_initial = "/webhook/main"
-        return f"{main_bot_path_initial}_{random_letter_string(length=6)}"
+        seed(self.port)
+        random_string = random_letter_string(length=6)
+        return f"{main_bot_path_initial}_{random_string}"
 
     @property
     def webhook_url(self) -> str:

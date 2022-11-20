@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from aiogram import F as MagicFilter, Router, Dispatcher, Bot
@@ -6,10 +7,8 @@ from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize, BufferedInputFile
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from config.app import API_TOKEN, WEBHOOK, POLL_TYPE, POLLING, ADMIN_USERNAME
-from config.log import logger
 from model.models import UserModel, StickerSetModel, StickerSetType
 from util.photo import get_picture_buffered_input
 from util.query.user import get_user_by_telegram_id, save_user
@@ -18,7 +17,8 @@ from util.session_middleware import get_async_database_session, filter_non_stick
     get_user_sticker_set_async_session, filter_non_photo
 from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition, \
     get_sticker_file_input_from_picture, get_sticker_file_input_from_sticker
-from util.webhook import configure_webhook, get_webhook_url
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
 start_router = Router(name="start router")
 sticker_router = Router(name="sticker router")
@@ -26,13 +26,18 @@ picture_router = Router(name="picture router")
 
 
 @start_router.message(Command("start", "help"))
-async def command_start_handler(message: Message, async_session: AsyncSession, telegram_user: TelegramUser) -> None:
+async def command_start_handler(
+        message: Message,
+        async_session: AsyncSession,
+        admin_username: str,
+        telegram_user: TelegramUser
+) -> None:
     text = (
         f"Send me a sticker and I'll put it in your personal sticker pack.\n"
         f"Send me a sticker from a pack create by this bot and this sticker will be removed.\n"
         f"Send me a picture with an emoji caption and I'll create a sticker from it.\n"
         f"If you have any questions, please contact me.\n\n"
-        f"<a href='https://t.me/{ADMIN_USERNAME}'>Contact</a>"
+        f"<a href='https://t.me/{admin_username}'>Contact</a>"
     )
 
     user: Optional[UserModel] = await get_user_by_telegram_id(async_session=async_session, telegram_id=telegram_user.id)
@@ -49,6 +54,7 @@ async def command_start_handler(message: Message, async_session: AsyncSession, t
 async def handle_sticker(
         message: Message,
         bot: Bot,
+        admin_username: str,
         async_session: AsyncSession,
         user: UserModel,
         sticker_set: Optional[StickerSetModel],
@@ -62,12 +68,12 @@ async def handle_sticker(
         return await handle_sticker_removal(
             bot=bot,
             message=message,
+            admin_username=admin_username,
             received_sticker=message_sticker,
         )
 
     sticker_file_input = await get_sticker_file_input_from_sticker(
         bot=bot,
-        api_token=API_TOKEN,
         sticker_set_type=sticker_set_type,
         sticker=message_sticker
     )
@@ -138,20 +144,27 @@ async def handle_picture(
 
 
 async def on_startup(bot: Bot) -> None:
-    if POLL_TYPE == WEBHOOK:
-        webhook_url = get_webhook_url()
+    from settings_reader import settings
+
+    if settings.poll_type == 'WEBHOOK':
+        webhook_url = settings.webhook_url
         await bot.set_webhook(webhook_url)
-        logger.info(f"Webhook set to: {webhook_url}")
+        logging.info(f"Webhook set to: {webhook_url}")
 
 
 async def on_shutdown() -> None:
-    logger.info("Shutting down...")
+    logging.info("Shutting down...")
 
 
 def main() -> None:
-    bot = Bot(API_TOKEN, parse_mode="HTML")
+    from settings_reader import settings
+
+    bot = Bot(settings.api_token, parse_mode="HTML")
 
     dp = Dispatcher(events_isolation=SimpleEventIsolation())
+
+    dp["async_engine"] = create_async_engine(url=settings.async_database_url, pool_size=20, pool_pre_ping=True)
+    dp["admin_username"] = settings.admin_username
 
     dp.include_router(start_router)
     dp.include_router(sticker_router)
@@ -171,21 +184,19 @@ def main() -> None:
     picture_router.message.middleware(filter_no_emoji_caption)  # type: ignore
     picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
 
-    if POLL_TYPE == WEBHOOK:
+    if settings.poll_type == 'WEBHOOK':
         from aiohttp_healthcheck import HealthCheck  # type: ignore
         health = HealthCheck()
 
-        webhook_path, port = configure_webhook()
-
         app = web.Application()
-        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=webhook_path)
+        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=settings.main_bot_path)
         setup_application(app, dp, bot=bot)
 
         app.add_routes([web.get("/health", health)])
 
-        web.run_app(app, host="0.0.0.0", port=port)
+        web.run_app(app, host="0.0.0.0", port=settings.port)
 
-    if POLL_TYPE == POLLING:
+    if settings.poll_type == 'POLLING':
         dp.run_polling(bot, skip_updates=True)
 
 

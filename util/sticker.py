@@ -1,5 +1,3 @@
-from random import choices
-from string import ascii_letters
 from typing import TypedDict
 
 from aiogram import Bot
@@ -7,9 +5,9 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInputFile, BufferedInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.app import ADMIN_USERNAME, PROD_ENV_NAME, ENVIRONMENT
 from model.models import StickerSetModel, UserModel, StickerSetType
 from util.query.sticker_set import create_sticker_set
+from util.random import random_letter_string
 
 
 class StickerFileInput(TypedDict, total=False):
@@ -23,10 +21,10 @@ def get_sticker_file_input_from_picture(picture_buffered_input: BufferedInputFil
 
 
 async def get_sticker_file_input_from_sticker(
-        bot: Bot, api_token: str, sticker_set_type: StickerSetType, sticker: Sticker,
+        bot: Bot, sticker_set_type: StickerSetType, sticker: Sticker,
 ) -> StickerFileInput:
-    def build_file_url(_api_token: str, file_path: str) -> str:
-        return f"https://api.telegram.org/file/bot{_api_token}/{file_path}"
+    def build_file_url(_bot: Bot, file_path: str) -> str:
+        return f"https://api.telegram.org/file/bot{_bot.token}/{file_path}"
 
     if sticker_set_type == StickerSetType.ANIMATED or sticker_set_type == StickerSetType.VIDEO:
         file: File = await bot.get_file(file_id=sticker.file_id)
@@ -34,7 +32,7 @@ async def get_sticker_file_input_from_sticker(
         if not file.file_path:
             raise ValueError("File path is oof.")
 
-        sticker_url = build_file_url(_api_token=api_token, file_path=file.file_path)
+        sticker_url = build_file_url(_bot=bot, file_path=file.file_path)
 
         url_input_file = URLInputFile(url=sticker_url)
 
@@ -68,13 +66,7 @@ async def create_new_sticker_set(
         return f"{username}'s Greatest Hits"
 
     def build_sticker_set_prefix(_telegram_user_username: str) -> str:
-        def random_letter_string(length: int) -> str:
-            return "".join(choices(ascii_letters, k=length))
-
-        if ENVIRONMENT == PROD_ENV_NAME:
-            return f"{_telegram_user_username}_{random_letter_string(3)}"
-
-        return random_letter_string(length=6)
+        return f"{_telegram_user_username}_{random_letter_string(length=4)}"
 
     bot_user = await bot.get_me()
     bot_username = bot_user.username
@@ -114,6 +106,7 @@ async def handle_sticker_removal(
         bot: Bot,
         message: Message,
         received_sticker: Sticker,
+        admin_username: str,
 ) -> None:
     try:
         await bot.delete_sticker_from_set(sticker=received_sticker.file_id)
@@ -124,7 +117,7 @@ async def handle_sticker_removal(
                 "but it wasn't in the pack due to a bug in Telegram, most likely. "
                 "Please wait 15 minutes and check if sticker is in your pack still.\n"
                 "If it is, please contact me!\n\n"
-                f"<a href='https://t.me/{ADMIN_USERNAME}'>Contact</a>"
+                f"<a href='https://t.me/{admin_username}'>Contact</a>"
             )
             await message.reply(text=text, parse_mode="HTML")
     else:

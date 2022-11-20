@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Awaitable, Callable, Optional
 
 from aiogram.types import Message
@@ -6,8 +7,6 @@ from emoji import distinct_emoji_list
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database_engine import async_engine
-from config.log import logger
 from model.models import UserModel, StickerSetModel
 from util.photo import get_largest_picture
 from util.query.sticker_set import get_sticker_set_by_user_and_type, get_sticker_set_type_from_message
@@ -20,16 +19,16 @@ async def get_async_database_session(
         data: Dict[str, Any],
 ) -> Any:
     try:
-        async with AsyncSession(bind=async_engine) as async_session:
+        async with AsyncSession(bind=data["async_engine"]) as async_session:
             async with async_session.begin():
                 data["async_session"] = async_session
                 return await handler(message, data)
     except DBAPIError as e:
-        logger.error(f"DBAPIError error: {e}")
+        logging.error(f"DBAPIError error: {e}")
         await message.reply("An error occurred. Please try again.")
         return None
     except ConnectionDoesNotExistError as e:
-        logger.error(f"ConnectionDoesNotExistError error: {e}")
+        logging.error(f"ConnectionDoesNotExistError error: {e}")
         await message.reply("An error occurred. Please try again.")
         return None
 
@@ -40,7 +39,7 @@ async def filter_non_user(
         data: Dict[str, Any],
 ) -> Any:
     if not message.from_user:
-        logger.error(f"No user in message?! Message: {message}")
+        logging.error(f"No user in message?! Message: {message}")
         return None
 
     if not message.from_user.username:
@@ -64,7 +63,7 @@ async def get_user_sticker_set_async_session(
     if not message.sticker and not message.photo:
         return None
 
-    async with AsyncSession(bind=async_engine) as async_session:
+    async with AsyncSession(bind=data["async_engine"]) as async_session:
         async with async_session.begin():
             user: Optional[UserModel] = await get_user_by_telegram_id(
                 async_session=async_session,
@@ -101,12 +100,12 @@ async def filter_non_sticker(
         return None
 
     if not message.sticker:
-        logger.error(
+        logging.error(
             f"No sticker in message?! User: {message.from_user.full_name} - @{message.from_user.username or 'None'}")
         return
 
     if not message.sticker.emoji:
-        logger.error(
+        logging.error(
             f"Sticker has no emoji! User: {message.from_user.full_name} - @{message.from_user.username or 'None'}")
         return None
 
@@ -148,7 +147,7 @@ async def filter_non_photo(
         return None
 
     if not message.photo:
-        logger.error(
+        logging.error(
             f"No photo in message?! User: {message.from_user.full_name} - @{message.from_user.username}"
         )
         return None

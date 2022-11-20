@@ -1,5 +1,5 @@
 from enum import Enum
-from random import seed
+from functools import cached_property
 
 from pydantic import BaseSettings, Field, validator
 
@@ -12,6 +12,9 @@ class PollType(Enum):
 
 
 class Settings(BaseSettings):
+    class Config:
+        keep_untouched = (cached_property,)
+
     api_token: str = Field(env='API_TOKEN')
     admin_username: str = Field(env='ADMIN_USERNAME')
     database_url: str = Field(env='DATABASE_URL')
@@ -20,11 +23,10 @@ class Settings(BaseSettings):
     poll_type: PollType = Field(env='POLL_TYPE')
     environment: str = Field(env='ENVIRONMENT')
 
-    @property
+    @cached_property
     def main_bot_path(self) -> str:
         main_bot_path_initial = "/webhook/main"
-        seed(self.port)
-        random_string = random_letter_string(length=6)
+        random_string = random_letter_string(length=4)
         return f"{main_bot_path_initial}_{random_string}"
 
     @property

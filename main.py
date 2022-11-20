@@ -18,8 +18,6 @@ from util.session_middleware import get_async_database_session, filter_non_stick
 from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition, \
     get_sticker_file_input_from_picture, get_sticker_file_input_from_sticker
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-
 start_router = Router(name="start router")
 sticker_router = Router(name="sticker router")
 picture_router = Router(name="picture router")

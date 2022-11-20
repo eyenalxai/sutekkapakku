@@ -1,4 +1,4 @@
-from typing import Any
+from functools import cache
 
 from pydantic import BaseSettings, Field, validator
 
@@ -13,14 +13,13 @@ class Settings(BaseSettings):
     port: int = Field(env='PORT')
     poll_type: str = Field(env='POLL_TYPE')
     environment: str = Field(env='ENVIRONMENT')
-    main_bot_path: str
 
-    # init
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
+    @property
+    @cache
+    def main_bot_path(self) -> str:
         main_bot_path_initial = "/webhook/main"
         random_string = random_letter_string(length=6)
-        self.main_bot_path = f"{main_bot_path_initial}_{random_string}"
+        return f"{main_bot_path_initial}_{random_string}"
 
     @property
     def async_database_url(self) -> str:

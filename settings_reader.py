@@ -1,4 +1,4 @@
-from functools import cache
+from functools import cached_property
 
 from pydantic import BaseSettings, Field, validator
 
@@ -6,6 +6,9 @@ from util.random import random_letter_string
 
 
 class Settings(BaseSettings):
+    class Config:
+        keep_untouched = (cached_property,)
+
     api_token: str = Field(env='API_TOKEN')
     admin_username: str = Field(env='ADMIN_USERNAME')
     database_url: str = Field(env='DATABASE_URL')
@@ -14,8 +17,7 @@ class Settings(BaseSettings):
     poll_type: str = Field(env='POLL_TYPE')
     environment: str = Field(env='ENVIRONMENT')
 
-    @property
-    @cache
+    @cached_property
     def main_bot_path(self) -> str:
         main_bot_path_initial = "/webhook/main"
         random_string = random_letter_string(length=6)

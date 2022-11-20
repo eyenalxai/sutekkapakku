@@ -1,6 +1,6 @@
 from typing import Optional
 
-from aiogram import Dispatcher, Bot, F as MagicFilter, Router
+from aiogram import F as MagicFilter, Router, Dispatcher, Bot
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize, BufferedInputFile
@@ -19,10 +19,6 @@ from util.session_middleware import get_async_database_session, filter_non_stick
 from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition, \
     get_sticker_file_input_from_picture, get_sticker_file_input_from_sticker
 from util.webhook import configure_webhook, get_webhook_url
-
-bot = Bot(API_TOKEN, parse_mode="HTML")
-
-dp = Dispatcher(events_isolation=SimpleEventIsolation())
 
 start_router = Router(name="start router")
 sticker_router = Router(name="sticker router")
@@ -52,6 +48,7 @@ async def command_start_handler(message: Message, async_session: AsyncSession, t
 @sticker_router.message(MagicFilter.sticker)
 async def handle_sticker(
         message: Message,
+        bot: Bot,
         async_session: AsyncSession,
         user: UserModel,
         sticker_set: Optional[StickerSetModel],
@@ -101,6 +98,7 @@ async def handle_sticker(
 @picture_router.message(MagicFilter.photo)
 async def handle_picture(
         message: Message,
+        bot: Bot,
         async_session: AsyncSession,
         user: UserModel,
         sticker_set: StickerSetModel,
@@ -139,7 +137,7 @@ async def handle_picture(
     )
 
 
-async def on_startup() -> None:
+async def on_startup(bot: Bot) -> None:
     if POLL_TYPE == WEBHOOK:
         webhook_url = get_webhook_url()
         await bot.set_webhook(webhook_url)
@@ -151,6 +149,10 @@ async def on_shutdown() -> None:
 
 
 def main() -> None:
+    bot = Bot(API_TOKEN, parse_mode="HTML")
+
+    dp = Dispatcher(events_isolation=SimpleEventIsolation())
+
     dp.include_router(start_router)
     dp.include_router(sticker_router)
     dp.include_router(picture_router)

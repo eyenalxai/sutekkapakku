@@ -1,5 +1,4 @@
 from enum import Enum
-from functools import cached_property
 
 from pydantic import BaseSettings, Field, validator
 
@@ -10,9 +9,6 @@ class PollType(Enum):
 
 
 class Settings(BaseSettings):
-    class Config:
-        keep_untouched = (cached_property,)
-
     api_token: str = Field(env="API_TOKEN")
     admin_username: str = Field(env="ADMIN_USERNAME")
     database_url: str = Field(env="DATABASE_URL")
@@ -37,7 +33,6 @@ class Settings(BaseSettings):
         assert not v.endswith("/"), "DOMAIN must not end with slash"
         assert not v.startswith("http"), "DOMAIN must not start with http"
         assert not v.startswith("https"), "DOMAIN must not start with https"
-        assert not v.startswith("www"), "DOMAIN must not start with www"
         return v
 
 

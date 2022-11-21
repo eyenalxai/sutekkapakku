@@ -2,10 +2,11 @@ from typing import TypedDict
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInputFile, BufferedInputFile
+from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInputFile, BufferedInputFile, PhotoSize
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from model.models import StickerSetModel, UserModel, StickerSetType
+from util.photo import get_picture_buffered_input
 from util.query.sticker_set import create_sticker_set
 from util.random import random_letter_string
 
@@ -16,7 +17,9 @@ class StickerFileInput(TypedDict, total=False):
     webm_sticker: URLInputFile
 
 
-def get_sticker_file_input_from_picture(picture_buffered_input: BufferedInputFile) -> StickerFileInput:
+async def get_sticker_file_input_from_picture(bot: Bot, picture: PhotoSize) -> StickerFileInput:
+    picture_buffered_input: BufferedInputFile = await get_picture_buffered_input(bot=bot, picture=picture)
+
     return {"png_sticker": picture_buffered_input}
 
 

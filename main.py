@@ -4,14 +4,13 @@ from typing import Optional
 from aiogram import F as MagicFilter, Router, Dispatcher, Bot
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import SimpleEventIsolation
-from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize, BufferedInputFile
+from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from model.models import UserModel, StickerSetModel, StickerSetType
 from settings_reader import PollType
-from util.photo import get_picture_buffered_input
 from util.query.user import get_user_by_telegram_id, save_user
 from util.session_middleware import get_async_database_session, filter_non_sticker, filter_non_user, \
     filter_no_emoji_caption, \
@@ -115,10 +114,8 @@ async def handle_picture(
         picture: PhotoSize,
         emoji: str
 ) -> None:
-    picture_buffered_input: BufferedInputFile = await get_picture_buffered_input(bot=bot, picture=picture)
-
-    sticker_file_input = get_sticker_file_input_from_picture(
-        picture_buffered_input=picture_buffered_input
+    sticker_file_input = await get_sticker_file_input_from_picture(
+        bot=bot, picture=picture
     )
 
     if not sticker_set:

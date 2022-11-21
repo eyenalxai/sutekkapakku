@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     domain: str = Field(env='DOMAIN')
     port: int = Field(env='PORT')
     poll_type: PollType = Field(env='POLL_TYPE')
-    environment: str = Field(env='ENVIRONMENT')
 
     @cached_property
     def main_bot_path(self) -> str:
@@ -45,11 +44,6 @@ class Settings(BaseSettings):
         assert not v.endswith('/'), 'DOMAIN must not end with slash'
         assert not v.startswith('http'), 'DOMAIN must not start with http'
         assert not v.startswith('https'), 'DOMAIN must not start with https'
-        return v
-
-    @validator('environment')
-    def environment_must_be_dev_or_prod(cls, v: str) -> str:
-        assert v in ['DEV', 'PROD'], 'ENVIRONMENT must be DEV or PROD'
         return v
 
 

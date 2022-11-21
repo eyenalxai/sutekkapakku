@@ -3,8 +3,6 @@ from functools import cached_property
 
 from pydantic import BaseSettings, Field, validator
 
-from util.random import random_letter_string
-
 
 class PollType(Enum):
     WEBHOOK = "WEBHOOK"
@@ -21,12 +19,7 @@ class Settings(BaseSettings):
     domain: str = Field(env='DOMAIN')
     port: int = Field(env='PORT')
     poll_type: PollType = Field(env='POLL_TYPE')
-
-    @cached_property
-    def main_bot_path(self) -> str:
-        main_bot_path_initial = "/webhook/main"
-        random_string = random_letter_string(length=4)
-        return f"{main_bot_path_initial}_{random_string}"
+    main_bot_path = "/webhook/main"
 
     @property
     def async_database_url(self) -> str:

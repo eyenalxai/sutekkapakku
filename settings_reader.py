@@ -37,6 +37,7 @@ class Settings(BaseSettings):
         assert not v.endswith('/'), 'DOMAIN must not end with slash'
         assert not v.startswith('http'), 'DOMAIN must not start with http'
         assert not v.startswith('https'), 'DOMAIN must not start with https'
+        assert not v.startswith('www'), 'DOMAIN must not start with www'
         return v
 
 

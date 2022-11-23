@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     domain: str = Field(env="DOMAIN")
     port: int = Field(env="PORT")
     poll_type: PollType = Field(env="POLL_TYPE")
-    main_bot_path = "/webhook/main"
+    main_bot_path: str = "/webhook/main"
 
     @property
     def async_database_url(self) -> str:
@@ -31,8 +31,7 @@ class Settings(BaseSettings):
     @validator("domain")
     def domain_must_not_end_with_slash(cls, v: str) -> str:
         assert not v.endswith("/"), "DOMAIN must not end with slash"
-        assert not v.startswith("http"), "DOMAIN must not start with http"
-        assert not v.startswith("https"), "DOMAIN must not start with https"
+        assert not v.startswith("http"), "DOMAIN must not start with http or https"
         return v
 
 

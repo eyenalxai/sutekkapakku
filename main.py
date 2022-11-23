@@ -10,13 +10,23 @@ from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from model.models import UserModel, StickerSetModel, StickerSetType
-from settings_reader import PollType
+from settings_reader import PollType, settings
 from util.query.user import get_user_by_telegram_id, save_user
-from util.session_middleware import get_async_database_session, filter_non_sticker, filter_non_user, \
-    filter_no_emoji_caption, \
-    get_user_sticker_set_async_session, filter_non_photo
-from util.sticker import create_new_sticker_set, handle_sticker_removal, handle_sticker_addition, \
-    get_sticker_file_input_from_picture, get_sticker_file_input_from_sticker
+from util.session_middleware import (
+    get_async_database_session,
+    filter_non_sticker,
+    filter_non_user,
+    filter_no_emoji_caption,
+    get_user_sticker_set_async_session,
+    filter_non_photo
+)
+from util.sticker import (
+    create_new_sticker_set,
+    handle_sticker_removal,
+    handle_sticker_addition,
+    get_sticker_file_input_from_picture,
+    get_sticker_file_input_from_sticker
+)
 
 start_router = Router(name="start router")
 sticker_router = Router(name="sticker router")
@@ -142,8 +152,6 @@ async def handle_picture(
 
 
 async def on_startup(bot: Bot) -> None:
-    from settings_reader import settings
-
     if settings.poll_type == PollType.WEBHOOK:
         webhook_url = settings.webhook_url
         await bot.set_webhook(webhook_url)
@@ -155,8 +163,6 @@ async def on_shutdown() -> None:
 
 
 def main() -> None:
-    from settings_reader import settings
-
     bot = Bot(settings.api_token, parse_mode="HTML")
 
     dp = Dispatcher(events_isolation=SimpleEventIsolation())

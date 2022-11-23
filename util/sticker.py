@@ -1,3 +1,5 @@
+from random import choices
+from string import ascii_letters
 from typing import TypedDict
 
 from aiogram import Bot
@@ -8,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from model.models import StickerSetModel, UserModel, StickerSetType
 from util.photo import get_picture_buffered_input
 from util.query.sticker_set import create_sticker_set
-from util.random import random_letter_string
 
 
 class StickerFileInput(TypedDict, total=False):
@@ -33,7 +34,7 @@ async def get_sticker_file_input_from_sticker(
         file: File = await bot.get_file(file_id=sticker.file_id)
 
         if not file.file_path:
-            raise ValueError("File path is oof.")
+            raise Exception("File path is oof.")
 
         sticker_url = build_file_url(_bot=bot, file_path=file.file_path)
 
@@ -69,6 +70,9 @@ async def create_new_sticker_set(
         return f"{username}'s Greatest Hits"
 
     def build_sticker_set_prefix(_telegram_user_username: str) -> str:
+        def random_letter_string(length: int) -> str:
+            return "".join(choices(ascii_letters, k=length))
+
         return f"{_telegram_user_username}_{random_letter_string(length=4)}"
 
     bot_user = await bot.get_me()

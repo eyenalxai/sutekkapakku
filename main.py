@@ -11,8 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from model.models import UserModel, StickerSetModel, StickerSetType
 from settings_reader import PollType, settings
-from util.query.user import get_user_by_telegram_id, save_user
-from util.session_middleware import (
+from util.middleware import (
     get_async_database_session,
     filter_non_sticker,
     filter_non_user,
@@ -20,6 +19,7 @@ from util.session_middleware import (
     get_user_sticker_set_async_session,
     filter_non_photo
 )
+from util.query.user import get_user_by_telegram_id, save_user
 from util.sticker import (
     create_new_sticker_set,
     handle_sticker_removal,

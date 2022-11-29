@@ -1,12 +1,15 @@
 import logging
-from typing import Optional
 
-from aiogram import F as MagicFilter, Router, Dispatcher, Bot
+from aiogram import F, Router, Dispatcher, Bot
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram.types import Message, User as TelegramUser, Sticker, PhotoSize
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram.webhook.aiohttp_server import (
+    SimpleRequestHandler,
+    setup_application,
+)
 from aiohttp import web
+from aiohttp_healthcheck import HealthCheck  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from model.models import UserModel, StickerSetModel, StickerSetType
@@ -17,15 +20,15 @@ from util.middleware import (
     filter_non_user,
     filter_no_emoji_caption,
     get_user_sticker_set_async_session,
-    filter_non_photo
+    filter_non_photo,
 )
-from util.query.user import get_user_by_telegram_id, save_user
+from util.query.user import get_user_by_telegram_id, save_user_to_database
 from util.sticker import (
     create_new_sticker_set,
     handle_sticker_removal,
     handle_sticker_addition,
     get_sticker_file_input_from_picture,
-    get_sticker_file_input_from_sticker
+    get_sticker_file_input_from_sticker,
 )
 
 start_router = Router(name="start router")
@@ -37,10 +40,10 @@ logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S")
 
 @start_router.message(Command("start", "help"))
 async def command_start_handler(
-        message: Message,
-        async_session: AsyncSession,
-        admin_username: str,
-        telegram_user: TelegramUser
+    message: Message,
+    async_session: AsyncSession,
+    admin_username: str,
+    telegram_user: TelegramUser,
 ) -> None:
     text = (
         f"Send me a sticker and I'll put it in your personal sticker pack.\n"
@@ -50,29 +53,32 @@ async def command_start_handler(
         f"<a href='https://t.me/{admin_username}'>Contact</a>"
     )
 
-    user: Optional[UserModel] = await get_user_by_telegram_id(async_session=async_session, telegram_id=telegram_user.id)
+    user: UserModel | None = await get_user_by_telegram_id(async_session=async_session, telegram_id=telegram_user.id)
 
     if not user:
-        await save_user(async_session=async_session, telegram_user=telegram_user)
-        await message.reply(text=f"Welcome, {telegram_user.full_name}!\n\n{text}", parse_mode="HTML")
+        await save_user_to_database(async_session=async_session, telegram_user=telegram_user)
+        await message.reply(
+            text=f"Welcome, {telegram_user.full_name}!\n\n{text}",
+            parse_mode="HTML",
+        )
         return
 
     await message.reply(text=f"Hello, {telegram_user.full_name}!\n\n{text}")
 
 
-@sticker_router.message(MagicFilter.sticker)
-async def handle_sticker(
-        message: Message,
-        bot: Bot,
-        admin_username: str,
-        async_session: AsyncSession,
-        user: UserModel,
-        sticker_set: Optional[StickerSetModel],
-        sticker_set_type: StickerSetType,
-        telegram_user: TelegramUser,
-        telegram_user_username: str,
-        message_sticker: Sticker,
-        sticker_emoji: str
+@sticker_router.message(F.sticker)
+async def handle_sticker(  # pylint: disable=too-many-arguments # noqa: CFQ002
+    message: Message,
+    bot: Bot,
+    admin_username: str,
+    async_session: AsyncSession,
+    user: UserModel,
+    sticker_set: StickerSetModel | None,
+    sticker_set_type: StickerSetType,
+    telegram_user: TelegramUser,
+    telegram_user_username: str,
+    message_sticker: Sticker,
+    sticker_emoji: str,
 ) -> None:
     if sticker_set and message_sticker.set_name == sticker_set.name:
         return await handle_sticker_removal(
@@ -83,9 +89,7 @@ async def handle_sticker(
         )
 
     sticker_file_input = await get_sticker_file_input_from_sticker(
-        bot=bot,
-        sticker_set_type=sticker_set_type,
-        sticker=message_sticker
+        bot=bot, sticker_set_type=sticker_set_type, sticker=message_sticker
     )
 
     if not sticker_set:
@@ -111,22 +115,20 @@ async def handle_sticker(
     )
 
 
-@picture_router.message(MagicFilter.photo)
-async def handle_picture(
-        message: Message,
-        bot: Bot,
-        async_session: AsyncSession,
-        user: UserModel,
-        sticker_set: StickerSetModel,
-        sticker_set_type: StickerSetType,
-        telegram_user: TelegramUser,
-        telegram_user_username: str,
-        picture: PhotoSize,
-        emoji: str
+@picture_router.message(F.photo)
+async def handle_picture(  # pylint: disable=too-many-arguments # noqa: CFQ002
+    message: Message,
+    bot: Bot,
+    async_session: AsyncSession,
+    user: UserModel,
+    sticker_set: StickerSetModel,
+    sticker_set_type: StickerSetType,
+    telegram_user: TelegramUser,
+    telegram_user_username: str,
+    picture: PhotoSize,
+    emoji: str,
 ) -> None:
-    sticker_file_input = await get_sticker_file_input_from_picture(
-        bot=bot, picture=picture
-    )
+    sticker_file_input = await get_sticker_file_input_from_picture(bot=bot, picture=picture)
 
     if not sticker_set:
         return await create_new_sticker_set(
@@ -155,7 +157,7 @@ async def on_startup(bot: Bot) -> None:
     if settings.poll_type == PollType.WEBHOOK:
         webhook_url = settings.webhook_url
         await bot.set_webhook(webhook_url)
-        logging.info(f"Webhook set to: {webhook_url}")
+        logging.info("Webhook set to: %s", webhook_url)
 
 
 async def on_shutdown() -> None:
@@ -165,7 +167,7 @@ async def on_shutdown() -> None:
 def main() -> None:
     bot = Bot(settings.api_token, parse_mode="HTML")
 
-    dp = Dispatcher(events_isolation=SimpleEventIsolation())
+    dp = Dispatcher(events_isolation=SimpleEventIsolation())  # pylint: disable=invalid-name
 
     dp["async_engine"] = create_async_engine(url=settings.async_database_url, pool_size=20, pool_pre_ping=True)
     dp["admin_username"] = settings.admin_username
@@ -189,7 +191,6 @@ def main() -> None:
     picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
 
     if settings.poll_type == PollType.WEBHOOK:
-        from aiohttp_healthcheck import HealthCheck  # type: ignore
         health = HealthCheck()
 
         app = web.Application()

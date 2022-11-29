@@ -73,7 +73,9 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    config_ini_section: Optional[dict[str, str]] = config.get_section(config.config_ini_section)
+    config_ini_section: Optional[dict[str, str]] = config.get_section(
+        config.config_ini_section
+    )
 
     if config_ini_section is None:
         raise Exception("No config.ini section found")

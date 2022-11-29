@@ -4,7 +4,15 @@ from typing import TypedDict
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import Message, Sticker, User as TelegramUser, File, URLInputFile, BufferedInputFile, PhotoSize
+from aiogram.types import (
+    Message,
+    Sticker,
+    User as TelegramUser,
+    File,
+    URLInputFile,
+    BufferedInputFile,
+    PhotoSize,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from model.models import StickerSetModel, UserModel, StickerSetType
@@ -24,19 +32,21 @@ async def get_sticker_file_input_from_picture(bot: Bot, picture: PhotoSize) -> S
     return {"png_sticker": picture_buffered_input}
 
 
-async def get_sticker_file_input_from_sticker(
-        bot: Bot, sticker_set_type: StickerSetType, sticker: Sticker,
+async def get_sticker_file_input_from_sticker(  # noqa: CFQ004, CCR001
+    bot: Bot,
+    sticker_set_type: StickerSetType,
+    sticker: Sticker,
 ) -> StickerFileInput:
     def build_file_url(_bot: Bot, file_path: str) -> str:
         return f"https://api.telegram.org/file/bot{_bot.token}/{file_path}"
 
     if sticker_set_type == StickerSetType.ANIMATED or sticker_set_type == StickerSetType.VIDEO:
-        file: File = await bot.get_file(file_id=sticker.file_id)
+        sticker_file: File = await bot.get_file(file_id=sticker.file_id)
 
-        if not file.file_path:
+        if not sticker_file.file_path:
             raise Exception("File path is oof.")
 
-        sticker_url = build_file_url(_bot=bot, file_path=file.file_path)
+        sticker_url = build_file_url(_bot=bot, file_path=sticker_file.file_path)
 
         url_input_file = URLInputFile(url=sticker_url)
 
@@ -49,16 +59,16 @@ async def get_sticker_file_input_from_sticker(
     return StickerFileInput(png_sticker=sticker.file_id)
 
 
-async def create_new_sticker_set(
-        bot: Bot,
-        message: Message,
-        sticker_set_type: StickerSetType,
-        async_session: AsyncSession,
-        telegram_user: TelegramUser,
-        telegram_user_username: str,
-        user: UserModel,
-        emojis: str,
-        sticker_file_input: StickerFileInput,
+async def create_new_sticker_set(  # noqa: CFQ004, CFQ002
+    bot: Bot,
+    message: Message,
+    sticker_set_type: StickerSetType,
+    async_session: AsyncSession,
+    telegram_user: TelegramUser,
+    telegram_user_username: str,
+    user: UserModel,
+    emojis: str,
+    sticker_file_input: StickerFileInput,
 ) -> None:
     def build_sticker_set_title(_sticker_set_type: StickerSetType, username: str) -> str:
         if _sticker_set_type == StickerSetType.ANIMATED:
@@ -110,15 +120,15 @@ async def create_new_sticker_set(
 
 
 async def handle_sticker_removal(
-        bot: Bot,
-        message: Message,
-        received_sticker: Sticker,
-        admin_username: str,
+    bot: Bot,
+    message: Message,
+    received_sticker: Sticker,
+    admin_username: str,
 ) -> None:
     try:
         await bot.delete_sticker_from_set(sticker=received_sticker.file_id)
-    except TelegramBadRequest as e:
-        if "STICKERSET_NOT_MODIFIED" in e.message:
+    except TelegramBadRequest as telegram_bad_request:
+        if "STICKERSET_NOT_MODIFIED" in telegram_bad_request.message:
             text = (
                 "It seems like you tried to remove a sticker from the pack, "
                 "but it wasn't in the pack due to a bug in Telegram, most likely. "
@@ -132,12 +142,12 @@ async def handle_sticker_removal(
 
 
 async def handle_sticker_addition(
-        bot: Bot,
-        message: Message,
-        user_sticker_set: StickerSetModel,
-        telegram_user: TelegramUser,
-        sticker_file_input: StickerFileInput,
-        emojis: str,
+    bot: Bot,
+    message: Message,
+    user_sticker_set: StickerSetModel,
+    telegram_user: TelegramUser,
+    sticker_file_input: StickerFileInput,
+    emojis: str,
 ) -> None:
     await bot.add_sticker_to_set(
         user_id=telegram_user.id,

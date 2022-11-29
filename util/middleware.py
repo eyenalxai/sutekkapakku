@@ -1,45 +1,40 @@
 import logging
-from typing import Any, Dict, Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from aiogram.types import Message
-from asyncpg import ConnectionDoesNotExistError  # type: ignore
 from emoji import distinct_emoji_list
-from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from model.models import UserModel, StickerSetModel
 from util.photo import get_largest_picture
-from util.query.sticker_set import get_sticker_set_by_user_and_type, get_sticker_set_type_from_message
+from util.query.sticker_set import get_sticker_set_type, get_sticker_set_for_user_by_type
 from util.query.user import get_user_by_telegram_id
 
 
 async def get_async_database_session(
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        message: Message,
-        data: Dict[str, Any],
+    handler: Callable[[Message, dict[str, Any]], Awaitable[Any]],
+    message: Message,
+    data: dict[str, Any],
 ) -> Any:
     try:
         async with AsyncSession(bind=data["async_engine"]) as async_session:
             async with async_session.begin():
                 data["async_session"] = async_session
                 return await handler(message, data)
-    except DBAPIError as e:
-        logging.error(f"DBAPIError error: {e}")
-        await message.reply("An error occurred. Please try again.")
-        return None
-    except ConnectionDoesNotExistError as e:
-        logging.error(f"ConnectionDoesNotExistError error: {e}")
+    except Exception as exception:
+        logging.error("Error: %s", exception)  # noqa: G200
         await message.reply("An error occurred. Please try again.")
         return None
 
 
 async def filter_non_user(
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        message: Message,
-        data: Dict[str, Any],
+    handler: Callable[[Message, dict[str, Any]], Awaitable[Any]],
+    message: Message,
+    data: dict[str, Any],
 ) -> Any:
     if not message.from_user:
-        logging.error(f"No user in message?! Message: {message}")
+        logging.error("No user in message?! Message: %s", message)
         return None
 
     if not message.from_user.username:
@@ -52,10 +47,10 @@ async def filter_non_user(
     return await handler(message, data)
 
 
-async def get_user_sticker_set_async_session(
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        message: Message,
-        data: Dict[str, Any],
+async def get_user_sticker_set_async_session(  # noqa: CFQ004
+    handler: Callable[[Message, dict[str, Any]], Awaitable[Any]],
+    message: Message,
+    data: dict[str, Any],
 ) -> Any:
     if not message.from_user:
         return None
@@ -65,22 +60,20 @@ async def get_user_sticker_set_async_session(
 
     async with AsyncSession(bind=data["async_engine"]) as async_session:
         async with async_session.begin():
-            user: Optional[UserModel] = await get_user_by_telegram_id(
-                async_session=async_session,
-                telegram_id=message.from_user.id
+            user: UserModel | None = await get_user_by_telegram_id(
+                async_session=async_session, telegram_id=message.from_user.id
             )
 
             if not user:
-                await message.reply(
-                    "You are not registered yet.\n"
-                    "Please use /start command.."
-                )
-                return
+                await message.reply("You are not registered yet.\n" "Please use /start command..")
+                return None
 
-            sticker_set_type = get_sticker_set_type_from_message(message=message)
+            sticker_set_type = get_sticker_set_type(message=message)
 
-            sticker_set: Optional[StickerSetModel] = await get_sticker_set_by_user_and_type(
-                async_session=async_session, user=user, sticker_set_type=sticker_set_type
+            sticker_set: StickerSetModel | None = await get_sticker_set_for_user_by_type(
+                async_session=async_session,
+                user=user,
+                sticker_set_type=sticker_set_type,
             )
 
             data["async_session"] = async_session
@@ -91,22 +84,22 @@ async def get_user_sticker_set_async_session(
             return await handler(message, data)
 
 
-async def filter_non_sticker(
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        message: Message,
-        data: Dict[str, Any],
+async def filter_non_sticker(  # noqa: CFQ004
+    handler: Callable[[Message, dict[str, Any]], Awaitable[Any]],
+    message: Message,
+    data: dict[str, Any],
 ) -> Any:
     if not message.from_user:
         return None
 
     if not message.sticker:
-        logging.error(
-            f"No sticker in message?! User: {message.from_user.full_name} - @{message.from_user.username or 'None'}")
-        return
+        logging.error("No sticker in message?! User: %s - @%s", message.from_user.full_name, message.from_user.username)
+        return None
 
     if not message.sticker.emoji:
         logging.error(
-            f"Sticker has no emoji! User: {message.from_user.full_name} - @{message.from_user.username or 'None'}")
+            "Sticker has no emoji! User: %s - @%s", message.from_user.full_name, message.from_user.username or "None"
+        )
         return None
 
     data["message_sticker"] = message.sticker
@@ -115,10 +108,10 @@ async def filter_non_sticker(
     return await handler(message, data)
 
 
-async def filter_no_emoji_caption(
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        message: Message,
-        data: Dict[str, Any],
+async def filter_no_emoji_caption(  # noqa: CFQ004
+    handler: Callable[[Message, dict[str, Any]], Awaitable[Any]],
+    message: Message,
+    data: dict[str, Any],
 ) -> Any:
     def get_emoji_list(text: str) -> list[str]:
         return distinct_emoji_list(text)  # type: ignore
@@ -139,17 +132,15 @@ async def filter_no_emoji_caption(
 
 
 async def filter_non_photo(
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        message: Message,
-        data: Dict[str, Any],
+    handler: Callable[[Message, dict[str, Any]], Awaitable[Any]],
+    message: Message,
+    data: dict[str, Any],
 ) -> Any:
     if not message.from_user or not message.from_user.username:
         return None
 
     if not message.photo:
-        logging.error(
-            f"No photo in message?! User: {message.from_user.full_name} - @{message.from_user.username}"
-        )
+        logging.error("No photo in message?! User: %s - @%s", message.from_user.full_name, message.from_user.username)
         return None
 
     largest_photo = get_largest_picture(pictures=message.photo)

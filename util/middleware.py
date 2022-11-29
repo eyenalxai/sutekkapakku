@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from model.models import UserModel, StickerSetModel
 from util.photo import get_largest_picture
-from util.query.sticker_set import get_sticker_set_type, get_sticker_set_for_user_by_type
+from util.query.sticker_set import (
+    get_sticker_set_type,
+    get_sticker_set_for_user_by_type,
+)
 from util.query.user import get_user_by_telegram_id
 
 
@@ -65,15 +68,19 @@ async def get_user_sticker_set_async_session(  # noqa: CFQ004
             )
 
             if not user:
-                await message.reply("You are not registered yet.\n" "Please use /start command..")
+                await message.reply(
+                    "You are not registered yet.\n" "Please use /start command.."
+                )
                 return None
 
             sticker_set_type = get_sticker_set_type(message=message)
 
-            sticker_set: StickerSetModel | None = await get_sticker_set_for_user_by_type(
-                async_session=async_session,
-                user=user,
-                sticker_set_type=sticker_set_type,
+            sticker_set: StickerSetModel | None = (
+                await get_sticker_set_for_user_by_type(
+                    async_session=async_session,
+                    user=user,
+                    sticker_set_type=sticker_set_type,
+                )
             )
 
             data["async_session"] = async_session
@@ -93,12 +100,18 @@ async def filter_non_sticker(  # noqa: CFQ004
         return None
 
     if not message.sticker:
-        logging.error("No sticker in message?! User: %s - @%s", message.from_user.full_name, message.from_user.username)
+        logging.error(
+            "No sticker in message?! User: %s - @%s",
+            message.from_user.full_name,
+            message.from_user.username,
+        )
         return None
 
     if not message.sticker.emoji:
         logging.error(
-            "Sticker has no emoji! User: %s - @%s", message.from_user.full_name, message.from_user.username or "None"
+            "Sticker has no emoji! User: %s - @%s",
+            message.from_user.full_name,
+            message.from_user.username or "None",
         )
         return None
 
@@ -117,7 +130,9 @@ async def filter_no_emoji_caption(  # noqa: CFQ004
         return distinct_emoji_list(text)  # type: ignore
 
     if not message.caption:
-        await message.reply("Please add a caption with an emoji to your picture (e.g. 🥰)")
+        await message.reply(
+            "Please add a caption with an emoji to your picture (e.g. 🥰)"
+        )
         return None
 
     emoji_list = get_emoji_list(text=message.caption)
@@ -140,7 +155,11 @@ async def filter_non_photo(
         return None
 
     if not message.photo:
-        logging.error("No photo in message?! User: %s - @%s", message.from_user.full_name, message.from_user.username)
+        logging.error(
+            "No photo in message?! User: %s - @%s",
+            message.from_user.full_name,
+            message.from_user.username,
+        )
         return None
 
     largest_photo = get_largest_picture(pictures=message.photo)

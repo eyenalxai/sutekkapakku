@@ -19,7 +19,9 @@ class Settings(BaseSettings):
 
     @property
     def async_database_url(self: "Settings") -> str:
-        async_database_url = self.database_url.replace("postgresql://", "postgresql+asyncpg://")
+        async_database_url = self.database_url.replace(
+            "postgresql://", "postgresql+asyncpg://"
+        )
         assert async_database_url.startswith(
             "postgresql+asyncpg://"
         ), "DATABASE_URL must start with postgresql+asyncpg://"
@@ -31,7 +33,8 @@ class Settings(BaseSettings):
 
     @validator("domain")
     def domain_must_not_end_with_slash(
-        cls: "Settings", v: str  # pylint: disable=no-self-argument,invalid-name # noqa: N805, VNE001
+        cls: "Settings",  # noqa: N805
+        v: str,  # noqa: VNE001
     ) -> str:
         assert not v.endswith("/"), "DOMAIN must not end with slash"
         assert not v.startswith("http"), "DOMAIN must not start with http or https"

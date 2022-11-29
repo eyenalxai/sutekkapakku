@@ -57,7 +57,7 @@ warn_unreachable = true
 warn_unused_ignores = true
 
 [tool.black]
-line-length = 120
+line-length = 88
 include = "\\.pyi?$"
 force-exclude = '''
 /(
@@ -66,5 +66,5 @@ force-exclude = '''
 '''
 
 [tool.flake8]
-max-line-length = 120
+max-line-length = 88
 exclude = ".git,__pycache__,.mypy_cache,alembic"

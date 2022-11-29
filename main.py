@@ -47,16 +47,20 @@ async def command_start_handler(
 ) -> None:
     text = (
         f"Send me a sticker and I'll put it in your personal sticker pack.\n"
-        f"Send me a sticker from a pack create by this bot and this sticker will be removed.\n"
+        f"Send me a sticker from a pack create by this bot and this sticker will be removed.\n"  # noqa: E501
         f"Send me a picture with an emoji caption and I'll create a sticker from it.\n"
         f"If you have any questions, please contact me.\n\n"
         f"<a href='https://t.me/{admin_username}'>Contact</a>"
     )
 
-    user: UserModel | None = await get_user_by_telegram_id(async_session=async_session, telegram_id=telegram_user.id)
+    user: UserModel | None = await get_user_by_telegram_id(
+        async_session=async_session, telegram_id=telegram_user.id
+    )
 
     if not user:
-        await save_user_to_database(async_session=async_session, telegram_user=telegram_user)
+        await save_user_to_database(
+            async_session=async_session, telegram_user=telegram_user
+        )
         await message.reply(
             text=f"Welcome, {telegram_user.full_name}!\n\n{text}",
             parse_mode="HTML",
@@ -128,7 +132,9 @@ async def handle_picture(  # pylint: disable=too-many-arguments # noqa: CFQ002
     picture: PhotoSize,
     emoji: str,
 ) -> None:
-    sticker_file_input = await get_sticker_file_input_from_picture(bot=bot, picture=picture)
+    sticker_file_input = await get_sticker_file_input_from_picture(
+        bot=bot, picture=picture
+    )
 
     if not sticker_set:
         return await create_new_sticker_set(
@@ -167,9 +173,13 @@ async def on_shutdown() -> None:
 def main() -> None:
     bot = Bot(settings.api_token, parse_mode="HTML")
 
-    dp = Dispatcher(events_isolation=SimpleEventIsolation())  # pylint: disable=invalid-name
+    dp = Dispatcher(
+        events_isolation=SimpleEventIsolation()
+    )  # pylint: disable=invalid-name
 
-    dp["async_engine"] = create_async_engine(url=settings.async_database_url, pool_size=20, pool_pre_ping=True)
+    dp["async_engine"] = create_async_engine(
+        url=settings.async_database_url, pool_size=20, pool_pre_ping=True
+    )
     dp["admin_username"] = settings.admin_username
 
     dp.include_router(start_router)
@@ -184,17 +194,19 @@ def main() -> None:
     start_router.message.middleware(get_async_database_session)  # type: ignore
 
     sticker_router.message.middleware(filter_non_sticker)  # type: ignore
-    sticker_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
+    sticker_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore # noqa: E501
 
     picture_router.message.middleware(filter_non_photo)  # type: ignore
     picture_router.message.middleware(filter_no_emoji_caption)  # type: ignore
-    picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore
+    picture_router.message.middleware(get_user_sticker_set_async_session)  # type: ignore # noqa: E501
 
     if settings.poll_type == PollType.WEBHOOK:
         health = HealthCheck()
 
         app = web.Application()
-        SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=settings.main_bot_path)
+        SimpleRequestHandler(dispatcher=dp, bot=bot).register(
+            app, path=settings.main_bot_path
+        )
         setup_application(app, dp, bot=bot)
 
         app.add_routes([web.get("/health", health)])

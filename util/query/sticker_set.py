@@ -56,7 +56,9 @@ async def create_sticker_set(
     name: str,
     title: str,
 ) -> StickerSetModel:
-    sticker_set: StickerSetModel = StickerSetModel(user=user, sticker_set_type=sticker_set_type, name=name, title=title)
+    sticker_set: StickerSetModel = StickerSetModel(
+        user=user, sticker_set_type=sticker_set_type, name=name, title=title
+    )
     async_session.add(sticker_set)
 
     return sticker_set

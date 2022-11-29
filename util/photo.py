@@ -6,7 +6,9 @@ from aiogram import Bot
 from aiogram.types import PhotoSize, BufferedInputFile
 
 
-def get_picture_bytes(bytes_io: BytesIO, resized_picture: Image, filename: str) -> BufferedInputFile:
+def get_picture_bytes(
+    bytes_io: BytesIO, resized_picture: Image, filename: str
+) -> BufferedInputFile:
     resized_picture.save(bytes_io, format="JPEG")
     picture_bytes = bytes_io.getvalue()
     return BufferedInputFile(picture_bytes, filename=filename)

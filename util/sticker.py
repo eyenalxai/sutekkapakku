@@ -26,8 +26,12 @@ class StickerFileInput(TypedDict, total=False):
     webm_sticker: URLInputFile
 
 
-async def get_sticker_file_input_from_picture(bot: Bot, picture: PhotoSize) -> StickerFileInput:
-    picture_buffered_input: BufferedInputFile = await get_picture_buffered_input(bot=bot, picture=picture)
+async def get_sticker_file_input_from_picture(
+    bot: Bot, picture: PhotoSize
+) -> StickerFileInput:
+    picture_buffered_input: BufferedInputFile = await get_picture_buffered_input(
+        bot=bot, picture=picture
+    )
 
     return {"png_sticker": picture_buffered_input}
 
@@ -40,7 +44,10 @@ async def get_sticker_file_input_from_sticker(  # noqa: CFQ004, CCR001
     def build_file_url(_bot: Bot, file_path: str) -> str:
         return f"https://api.telegram.org/file/bot{_bot.token}/{file_path}"
 
-    if sticker_set_type == StickerSetType.ANIMATED or sticker_set_type == StickerSetType.VIDEO:
+    if (
+        sticker_set_type == StickerSetType.ANIMATED
+        or sticker_set_type == StickerSetType.VIDEO
+    ):
         sticker_file: File = await bot.get_file(file_id=sticker.file_id)
 
         if not sticker_file.file_path:
@@ -70,7 +77,9 @@ async def create_new_sticker_set(  # noqa: CFQ004, CFQ002
     emojis: str,
     sticker_file_input: StickerFileInput,
 ) -> None:
-    def build_sticker_set_title(_sticker_set_type: StickerSetType, username: str) -> str:
+    def build_sticker_set_title(
+        _sticker_set_type: StickerSetType, username: str
+    ) -> str:
         if _sticker_set_type == StickerSetType.ANIMATED:
             return f"{username}'s Greatest Animated Hits"
 
@@ -91,9 +100,13 @@ async def create_new_sticker_set(  # noqa: CFQ004, CFQ002
     if not bot_username:
         raise ValueError("Bot username is not set!")
 
-    sticker_set_title = build_sticker_set_title(_sticker_set_type=sticker_set_type, username=telegram_user_username)
+    sticker_set_title = build_sticker_set_title(
+        _sticker_set_type=sticker_set_type, username=telegram_user_username
+    )
 
-    sticker_pack_prefix: str = build_sticker_set_prefix(_telegram_user_username=telegram_user_username)
+    sticker_pack_prefix: str = build_sticker_set_prefix(
+        _telegram_user_username=telegram_user_username
+    )
     sticker_set_name = f"{sticker_pack_prefix}_by_{bot_username}"
 
     sticker_set = await create_sticker_set(
@@ -114,7 +127,7 @@ async def create_new_sticker_set(  # noqa: CFQ004, CFQ002
 
     await message.reply(
         "Sticker pack created!\n\n"
-        f"Link: <a href='https://t.me/addstickers/{sticker_set_name}'>{sticker_set.title}</a>",
+        f"Link: <a href='https://t.me/addstickers/{sticker_set_name}'>{sticker_set.title}</a>",  # noqa: E501
         parse_mode="HTML",
     )
 
@@ -138,7 +151,9 @@ async def handle_sticker_removal(
             )
             await message.reply(text=text, parse_mode="HTML")
     else:
-        await message.reply(text="Sticker removed from the pack. It may take a few minutes for sticker pack to update.")
+        await message.reply(
+            text="Sticker removed from the pack. It may take a few minutes for sticker pack to update."  # noqa: E501
+        )
 
 
 async def handle_sticker_addition(
@@ -158,6 +173,6 @@ async def handle_sticker_addition(
 
     await message.reply(
         "Sticker added to the pack.\n\n"
-        f"Link: <a href='https://t.me/addstickers/{user_sticker_set.name}'>{user_sticker_set.title}</a>",
+        f"Link: <a href='https://t.me/addstickers/{user_sticker_set.name}'>{user_sticker_set.title}</a>",  # noqa: E501
         parse_mode="HTML",
     )

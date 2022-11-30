@@ -111,3 +111,4 @@ cython_debug/
 /.env_prod
 .DS_Store
 /.env_local
+/.idea/codeStyles/codeStyleConfig.xml

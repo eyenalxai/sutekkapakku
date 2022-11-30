@@ -1,12 +1,10 @@
-from aiogram.types import Sticker, Message
-from multipledispatch import dispatch  # type: ignore
+from aiogram.types import Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from model.models import StickerSetModel, StickerSetType, UserModel
 
 
-@dispatch(Message)
 def get_sticker_set_type(message: Message) -> StickerSetType:  # noqa: CFQ004
     if message.sticker:
         if message.sticker.is_animated:
@@ -21,17 +19,6 @@ def get_sticker_set_type(message: Message) -> StickerSetType:  # noqa: CFQ004
         return StickerSetType.REGULAR
 
     raise ValueError("Message is not a sticker or a photo.")
-
-
-@dispatch(Sticker)  # type: ignore
-def get_sticker_set_type(sticker: Sticker) -> StickerSetType:  # noqa: F811
-    if sticker.is_animated:
-        return StickerSetType.ANIMATED
-
-    if sticker.is_video:
-        return StickerSetType.VIDEO
-
-    return StickerSetType.REGULAR
 
 
 async def get_sticker_set_for_user_by_type(

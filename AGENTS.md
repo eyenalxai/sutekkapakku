@@ -28,3 +28,17 @@ Single-context: `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 - Bot framework: grammY
 - ORM: Drizzle ORM against PostgreSQL
 - Deployment: Railway (Infrastructure as Code in `.railway/railway.ts` using the `railway` SDK)
+- Linting: oxlint
+
+## Working rules
+
+- No backwards compatibility. Refactor freely; optimize for long-term maintenance and best practices.
+- Use subagents as much as possible, parallelize as much as possible. Do implementation work in separate rifts (git worktrees) and bring changes back by rebasing onto `main` — never merge.
+- Bun is the runtime, used properly: `bun --bun run <script>`, `bun --bun test`, `bun --bun x <tool>`.
+- All database access goes through Drizzle ORM. Never write raw SQL, even for migrations tooling — keep intermediate results in memory if needed.
+- Generate migrations with commands only: `bun run db:generate` (or `bun --bun x drizzle-kit generate --custom --name=<name>`). Never create migration files by hand.
+- No data loss is paramount: production data must remain intact and readable at every step.
+- No re-exports and no barrel files. Import from the module that owns the code.
+- Place files where they belong; respect the project structure.
+- Do not write comments unless they explain a hard "why this way?" question that the code cannot answer itself.
+- Do not suppress oxlint rules unless absolutely justified; surface every suppression in the change description.

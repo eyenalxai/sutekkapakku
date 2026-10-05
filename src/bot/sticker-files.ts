@@ -1,4 +1,3 @@
-import type { Bot } from "grammy"
 import type { InputSticker, Sticker } from "grammy/types"
 
 import { InputFile } from "grammy"
@@ -17,8 +16,25 @@ const downloadTelegramFile = async (url: string): Promise<Uint8Array> => {
   return new Uint8Array(await response.arrayBuffer())
 }
 
+interface TelegramFileDownload {
+  api: BotContext["api"]
+  token: string
+  fileApiRoot: string
+  fileId: string
+}
+
+const downloadTelegramFileByFileId = async (params: TelegramFileDownload): Promise<Uint8Array> => {
+  const { api, fileApiRoot, fileId, token } = params
+  const file = await api.getFile(fileId)
+  if (file.file_path === undefined || file.file_path.length === 0) {
+    throw new Error("File path is oof.")
+  }
+  return downloadTelegramFile(buildTelegramFileUrl(fileApiRoot, token, file.file_path))
+}
+
 interface BuildStickerInputParams {
-  bot: Bot<BotContext>
+  api: BotContext["api"]
+  token: string
   fileApiRoot: string
   sticker: Sticker
   stickerSetType: StickerSetType
@@ -26,14 +42,14 @@ interface BuildStickerInputParams {
 }
 
 const buildStickerInput = async (params: BuildStickerInputParams): Promise<InputSticker> => {
-  const { bot, emoji, fileApiRoot, sticker, stickerSetType } = params
+  const { api, emoji, fileApiRoot, sticker, stickerSetType, token } = params
   if (stickerSetType === "ANIMATED" || stickerSetType === "VIDEO") {
-    const file = await bot.api.getFile(sticker.file_id)
+    const file = await api.getFile(sticker.file_id)
     if (file.file_path === undefined || file.file_path.length === 0) {
       throw new Error("File path is oof.")
     }
     const bytes = await downloadTelegramFile(
-      buildTelegramFileUrl(fileApiRoot, bot.token, file.file_path),
+      buildTelegramFileUrl(fileApiRoot, token, file.file_path),
     )
     const filename = file.file_path.split("/").at(-1) ?? "sticker"
     const format = stickerSetType === "ANIMATED" ? "animated" : "video"
@@ -52,4 +68,4 @@ const buildPhotoStickerInput = (
   emoji_list: [emoji],
 })
 
-export { buildPhotoStickerInput, buildStickerInput }
+export { buildPhotoStickerInput, buildStickerInput, downloadTelegramFileByFileId }

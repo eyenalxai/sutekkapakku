@@ -27,7 +27,7 @@ Single-context: `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 - Runtime: Bun (`bun --bun ...` — never fall back to Node)
 - Bot framework: grammY
 - ORM: Drizzle ORM against PostgreSQL
-- Deployment: Railway (Infrastructure as Code in `.railway/railway.ts` using the `railway` SDK)
+- Deployment: Railway (Infrastructure as Code in `.railway/railway.ts` using the `railway` SDK; Railpack builder, no Dockerfile)
 - Linting: oxlint
 
 ## Working rules

@@ -16,12 +16,19 @@ interface TelegramApiUser {
   username: string
 }
 
+interface FakeTelegramFile {
+  file_path: string
+  data?: Uint8Array
+  content_type?: string
+}
+
 type TelegramApiMethodHandler = (
   params: Record<string, unknown>,
 ) => Record<string, unknown> | boolean
 
 interface FakeTelegramApiOptions {
   botUser?: TelegramApiUser
+  files?: Record<string, FakeTelegramFile>
   methods?: Record<string, TelegramApiMethodHandler>
 }
 
@@ -32,6 +39,7 @@ interface FakeTelegramApi {
   callsFor: (method: string) => TelegramApiCall[]
   clearCalls: () => void
   failNext: (method: string, failure?: TelegramApiFailure) => void
+  setFile: (fileId: string, file: FakeTelegramFile) => void
   stop: () => Promise<void>
 }
 
@@ -43,6 +51,7 @@ const DEFAULT_BOT_USER: TelegramApiUser = {
 }
 
 const BOT_PATH_PREFIX = "/bot"
+const FILE_PATH_PREFIX = "/file/bot"
 
 const parseMethod = (pathname: string): string | undefined => {
   if (!pathname.startsWith(BOT_PATH_PREFIX)) {
@@ -76,6 +85,7 @@ const parseParams = async (request: Request): Promise<Record<string, unknown>> =
 const createFakeTelegramApi = (options: FakeTelegramApiOptions = {}): FakeTelegramApi => {
   const botUser = options.botUser ?? DEFAULT_BOT_USER
   const failures = new Map<string, TelegramApiFailure[]>()
+  const files = new Map<string, FakeTelegramFile>(Object.entries(options.files ?? {}))
   const calls: TelegramApiCall[] = []
   let messageId = 0
 
@@ -88,6 +98,19 @@ const createFakeTelegramApi = (options: FakeTelegramApiOptions = {}): FakeTelegr
       return custom(params)
     }
     switch (method) {
+      case "getFile": {
+        const fileId = String(params.file_id)
+        const file = files.get(fileId)
+        if (file === undefined) {
+          return { file_id: fileId, file_unique_id: `unique_${fileId}` }
+        }
+        return {
+          file_id: fileId,
+          file_unique_id: `unique_${fileId}`,
+          file_path: file.file_path,
+          file_size: file.data?.byteLength,
+        }
+      }
       case "getMe": {
         return { ...botUser }
       }
@@ -111,6 +134,19 @@ const createFakeTelegramApi = (options: FakeTelegramApiOptions = {}): FakeTelegr
     port: 0,
     async fetch(request) {
       const url = new URL(request.url)
+      if (url.pathname.startsWith(FILE_PATH_PREFIX)) {
+        const filePath = decodeURIComponent(
+          url.pathname.slice(FILE_PATH_PREFIX.length).split("/").slice(1).join("/"),
+        )
+        const file = [...files.values()].find((candidate) => candidate.file_path === filePath)
+        if (file === undefined) {
+          return new Response("Not Found", { status: 404 })
+        }
+        return new Response(file.data === undefined ? null : new Uint8Array(file.data).buffer, {
+          headers: { "content-type": file.content_type ?? "application/octet-stream" },
+        })
+      }
+
       const method = parseMethod(url.pathname)
       if (method === undefined) {
         return new Response("Not Found", { status: 404 })
@@ -160,6 +196,9 @@ const createFakeTelegramApi = (options: FakeTelegramApiOptions = {}): FakeTelegr
     callsFor,
     clearCalls,
     failNext,
+    setFile: (fileId, file) => {
+      files.set(fileId, file)
+    },
     stop,
   }
 }
@@ -168,6 +207,7 @@ export { createFakeTelegramApi }
 export type {
   FakeTelegramApi,
   FakeTelegramApiOptions,
+  FakeTelegramFile,
   TelegramApiCall,
   TelegramApiFailure,
   TelegramApiMethodHandler,

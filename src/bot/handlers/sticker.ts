@@ -7,6 +7,12 @@ import type { BotContext } from "@/bot/context"
 
 import { notify } from "@/bot/notify"
 import { Packs } from "@/bot/packs"
+import {
+  NOT_REGISTERED_REPLY,
+  STICKER_NOT_IN_PACK_REPLY,
+  STICKER_REMOVED_REPLY,
+  buildStickerSetNotModifiedReply,
+} from "@/bot/replies"
 import { runHandler } from "@/bot/run"
 import { buildStickerInput } from "@/bot/sticker-files"
 import { detectStickerSetType } from "@/bot/sticker-pack"
@@ -15,15 +21,6 @@ import { Users } from "@/bot/users"
 interface StickerHandlerOptions {
   adminUsername: string
 }
-
-const NOT_REGISTERED_REPLY = "You are not registered yet.\nPlease use /start command.."
-const STICKER_REMOVED_REPLY =
-  "Sticker removed from the pack. It may take a few minutes for sticker pack to update."
-
-const buildStickerSetNotModifiedReply = (adminUsername: string): string =>
-  "It seems like you tried to remove a sticker from the pack, but it wasn't in the pack due to a bug in Telegram, most likely. Please wait 15 minutes and check if sticker is in your pack still.\n" +
-  "If it is, please contact me!\n\n" +
-  `<a href='https://t.me/${adminUsername}'>Contact</a>`
 
 const logIgnoredSticker = (ctx: BotContext, userId: number): void => {
   const log = createLogger({ operation: "sticker_without_emoji" })
@@ -69,6 +66,7 @@ const createStickerHandler =
       return
     }
 
+    const flow = ctx.session.flow
     await runHandler(
       ctx,
       Effect.gen(function* stickerHandlerEffect() {
@@ -78,6 +76,21 @@ const createStickerHandler =
         const user = yield* users.findByTelegramId(String(from.id))
         if (user === undefined) {
           yield* notify(chatId, NOT_REGISTERED_REPLY)
+          return
+        }
+
+        if (flow?.kind === "remove") {
+          ctx.session.flow = undefined
+          const volumes = yield* packs.listVolumes(user.id)
+          const target =
+            flow.volumeId === undefined
+              ? volumes.find((volume) => volume.name === sticker.set_name)
+              : volumes.find((volume) => volume.id === flow.volumeId)
+          if (target === undefined || target.name !== sticker.set_name) {
+            yield* notify(chatId, STICKER_NOT_IN_PACK_REPLY)
+            return
+          }
+          yield* removeSticker(chatId, sticker, target.id, adminUsername)
           return
         }
 

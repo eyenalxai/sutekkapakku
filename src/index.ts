@@ -26,6 +26,21 @@ startupLog.set({
   pollType: config.pollType,
 })
 
+const botCommands = [
+  { command: "start", description: "Main menu" },
+  { command: "packs", description: "My sticker packs" },
+  { command: "add", description: "How to add stickers" },
+  { command: "remove", description: "Remove a sticker" },
+  { command: "help", description: "Help" },
+  { command: "cancel", description: "Cancel the current action" },
+]
+
+try {
+  await bot.api.setMyCommands(botCommands)
+} catch (error) {
+  startupLog.set({ commandsError: error instanceof Error ? error.message : String(error) })
+}
+
 let runner: ReturnType<typeof run> | null = null
 let server: Awaited<ReturnType<typeof startWebhookRuntime>> | null = null
 

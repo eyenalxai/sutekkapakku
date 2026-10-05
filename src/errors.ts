@@ -59,10 +59,22 @@ class VolumeTitleTaken extends Schema.TaggedError<VolumeTitleTaken>()("VolumeTit
   title: Schema.String,
 }) {}
 
+class MessageNotModified extends Schema.TaggedError<MessageNotModified>()("MessageNotModified", {
+  method: Schema.String,
+  description: Schema.String,
+}) {}
+
+class MessageNotEditable extends Schema.TaggedError<MessageNotEditable>()("MessageNotEditable", {
+  method: Schema.String,
+  description: Schema.String,
+}) {}
+
 export {
   ChatUnavailable,
   DatabaseError,
   InvalidConfiguration,
+  MessageNotEditable,
+  MessageNotModified,
   StickerSetInvalid,
   StickerSetNameConflict,
   StickerSetNotModified,

@@ -11,12 +11,18 @@ import type {
 import { Context, Effect, Layer } from "effect"
 import { Api } from "grammy"
 
-import type { StickerSetOperationFailure, TelegramFailure } from "@/bot/telegram-failure"
+import type {
+  StickerSetOperationFailure,
+  TelegramFailure,
+  RetryableFailure,
+  EditFailure,
+} from "@/bot/telegram-failure"
 
 import {
   isRateLimited,
   isTransient,
   telegramRetrySchedule,
+  toEditFailure,
   toStickerSetFailure,
   toTelegramFailure,
 } from "@/bot/telegram-failure"
@@ -52,12 +58,12 @@ interface TelegramApiInterface {
     messageId: number,
     text: string,
     options?: SendMessageOptions,
-  ) => Effect.Effect<Message | true, TelegramFailure>
+  ) => Effect.Effect<Message | true, EditFailure>
   readonly editMessageReplyMarkup: (
     chatId: number | string,
     messageId: number,
     options: { readonly reply_markup?: InlineKeyboardMarkup },
-  ) => Effect.Effect<Message | true, TelegramFailure>
+  ) => Effect.Effect<Message | true, EditFailure>
   readonly deleteMessage: (
     chatId: number | string,
     messageId: number,
@@ -99,6 +105,12 @@ const call = <A>(method: string, invoke: () => Promise<A>): Effect.Effect<A, Tel
     catch: (cause) => toTelegramFailure(method, cause),
   })
 
+const callEdit = <A>(method: string, invoke: () => Promise<A>): Effect.Effect<A, EditFailure> =>
+  Effect.tryPromise({
+    try: invoke,
+    catch: (cause) => toEditFailure(method, cause),
+  })
+
 const callStickerSet = <A>(
   method: string,
   stickerSetName: string,
@@ -109,9 +121,9 @@ const callStickerSet = <A>(
     catch: (cause) => toStickerSetFailure(method, stickerSetName, cause),
   })
 
-const retry = <A, E extends StickerSetOperationFailure>(
+const retry = <A, E extends RetryableFailure>(
   effect: Effect.Effect<A, E>,
-  predicate: (error: StickerSetOperationFailure) => boolean,
+  predicate: (error: RetryableFailure) => boolean,
 ): Effect.Effect<A, E> =>
   Effect.retry(effect, { schedule: telegramRetrySchedule, while: predicate })
 
@@ -187,12 +199,14 @@ class TelegramApi extends Context.Service<TelegramApi, TelegramApiInterface>()(
           ),
         editMessageText: (chatId, messageId, text, options) =>
           retry(
-            call("editMessageText", () => api.editMessageText(chatId, messageId, text, options)),
+            callEdit("editMessageText", () =>
+              api.editMessageText(chatId, messageId, text, options),
+            ),
             isRateLimited,
           ),
         editMessageReplyMarkup: (chatId, messageId, options) =>
           retry(
-            call("editMessageReplyMarkup", () =>
+            callEdit("editMessageReplyMarkup", () =>
               api.editMessageReplyMarkup(chatId, messageId, options),
             ),
             isRateLimited,

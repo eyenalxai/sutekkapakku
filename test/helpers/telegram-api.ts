@@ -38,6 +38,7 @@ interface FakeTelegramApi {
   calls: TelegramApiCall[]
   callsFor: (method: string) => TelegramApiCall[]
   clearCalls: () => void
+  enqueueUpdate: (update: Record<string, unknown>) => void
   failNext: (method: string, failure?: TelegramApiFailure) => void
   setFile: (fileId: string, file: FakeTelegramFile) => void
   stop: () => Promise<void>
@@ -82,22 +83,73 @@ const parseParams = async (request: Request): Promise<Record<string, unknown>> =
   return {}
 }
 
+const updateIdOf = (update: Record<string, unknown>): number => Number(update.update_id ?? 0)
+
 const createFakeTelegramApi = (options: FakeTelegramApiOptions = {}): FakeTelegramApi => {
   const botUser = options.botUser ?? DEFAULT_BOT_USER
   const failures = new Map<string, TelegramApiFailure[]>()
   const files = new Map<string, FakeTelegramFile>(Object.entries(options.files ?? {}))
   const calls: TelegramApiCall[] = []
   let messageId = 0
+  const pendingUpdates: Record<string, unknown>[] = []
+  const updateWaiters = new Set<() => void>()
 
-  const resolveResult = (
+  const enqueueUpdate = (update: Record<string, unknown>): void => {
+    pendingUpdates.push(update)
+    pendingUpdates.sort((left, right) => updateIdOf(left) - updateIdOf(right))
+    for (const wake of updateWaiters) {
+      wake()
+    }
+  }
+
+  const dropConfirmedUpdates = (offset: number): void => {
+    const next = pendingUpdates[0]
+    if (next === undefined || updateIdOf(next) >= offset) {
+      return
+    }
+    pendingUpdates.shift()
+    dropConfirmedUpdates(offset)
+  }
+
+  const waitForUpdate = async (timeoutMs: number, signal: AbortSignal): Promise<void> => {
+    const { promise, resolve } = Promise.withResolvers<boolean>()
+    let timer: ReturnType<typeof setTimeout> | undefined = undefined
+    const settle = (): void => {
+      if (timer !== undefined) {
+        clearTimeout(timer)
+        timer = undefined
+      }
+      updateWaiters.delete(settle)
+      signal.removeEventListener("abort", settle)
+      resolve(true)
+    }
+    timer = setTimeout(settle, timeoutMs)
+    updateWaiters.add(settle)
+    signal.addEventListener("abort", settle)
+    await promise
+  }
+
+  const resolveResult = async (
     method: string,
     params: Record<string, unknown>,
-  ): Record<string, unknown> | boolean => {
+    signal: AbortSignal,
+  ): Promise<unknown> => {
     const custom = options.methods?.[method]
     if (custom !== undefined) {
       return custom(params)
     }
     switch (method) {
+      case "getUpdates": {
+        const offset = typeof params.offset === "number" ? params.offset : 0
+        const limit = typeof params.limit === "number" ? params.limit : 100
+        const timeoutSeconds = typeof params.timeout === "number" ? params.timeout : 0
+        dropConfirmedUpdates(offset)
+        if (pendingUpdates.length === 0 && timeoutSeconds > 0) {
+          await waitForUpdate(timeoutSeconds * 1000, signal)
+          dropConfirmedUpdates(offset)
+        }
+        return pendingUpdates.splice(0, limit)
+      }
       case "getFile": {
         const fileId = String(params.file_id)
         const file = files.get(fileId)
@@ -168,7 +220,10 @@ const createFakeTelegramApi = (options: FakeTelegramApiOptions = {}): FakeTelegr
         )
       }
 
-      return Response.json({ ok: true, result: resolveResult(method, params) })
+      return Response.json({
+        ok: true,
+        result: await resolveResult(method, params, request.signal),
+      })
     },
   })
 
@@ -195,6 +250,7 @@ const createFakeTelegramApi = (options: FakeTelegramApiOptions = {}): FakeTelegr
     calls,
     callsFor,
     clearCalls,
+    enqueueUpdate,
     failNext,
     setFile: (fileId, file) => {
       files.set(fileId, file)

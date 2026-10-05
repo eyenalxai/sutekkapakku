@@ -10,7 +10,6 @@ export default defineRailway(() => {
 
   const postgres = service("Postgres", {
     source: image("ghcr.io/railwayapp-templates/timescale-postgis-ssl:pg15-ts2.12"),
-    build: { builder: "NIXPACKS" },
     replicas: { "us-west2": 1 },
     networking: { privateNetworkEndpoint: "postgres", tcpProxies: { "5432": {} } },
     volumeMounts: { "/var/lib/postgresql/data": postgresData },

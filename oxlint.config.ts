@@ -103,6 +103,15 @@ export default defineConfig({
   plugins: basePlugins,
   categories,
   rules: baseRules,
+  overrides: [
+    {
+      files: [".railway/**/*.ts"],
+      rules: {
+        // Railway's IaC DSL requires the config file to default-export the project definition.
+        "import/no-default-export": "off",
+      },
+    },
+  ],
   env: {
     builtin: true,
   },

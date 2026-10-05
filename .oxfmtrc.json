@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [".pre-commit-config.yaml", "README.md", "alembic/**", "pyproject.toml"],
+  "ignorePatterns": [],
   "sortImports": {
     "groups": [
       "type-import",

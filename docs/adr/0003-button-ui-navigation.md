@@ -15,24 +15,24 @@ unchanged.
 
 Add a navigation layer of **panels** — inline-keyboard messages edited in place — plus guided **flows**:
 
-- Main menu (from `/start` and `/menu`): `📦 My packs`, `🗑 Remove a sticker`, `➕ How to add`, `ℹ️ Help`,
-  `✉️ Contact` (URL).
-- Packs overview: one line per sticker type with the active volume's title and live `n/120` count, one button
-  per volume (active first, archived marked `(full)` or `(expired)`), plus `🔄 Refresh` and `⬅️ Menu`.
-- Pack panel: title, count, and link; `📎 Open in Telegram`, `🗑 Remove a sticker`, `✏️ Rename`,
-  `🔍 Browse stickers`, `⬅️ My packs`.
+- Main menu (from `/start` and `/menu`): `📦 My packs`, `🗑 Remove a sticker`, `➕ Add stickers`, `❓ Help`,
+  `💬 Contact` (URL).
+- Packs overview: one line per volume with its title and live `n/120` count (active first, archived marked
+  `· full` or `· unavailable`), one button per volume, plus `🔄 Refresh` and `🏠 Menu`.
+- Pack panel: title, count, and link; `👁 Open in Telegram`, `🔍 Browse stickers`, `✏️ Rename`,
+  `🗑 Remove a sticker`, `🔄 Refresh`, `⬅️ My packs`, `🏠 Menu`.
 - Browse: one sticker per message with `◀️ i/n ▶️`, `🗑 Remove`, `✅ Done`; navigation deletes the previous
   browser message and sends the next, because Telegram cannot edit a message into a sticker.
 - Remove and Rename flows: a prompt, validated input, and a Cancel button; `/cancel` exits any flow.
-- Every callback query is answered with a toast; callback payloads are short typed payloads (`menu:*`,
-  `pack:<id>:*`, `flow:cancel`, `noop`) decoded by an Effect `Schema` union, and unknown payloads are ignored
-  safely.
+- Every callback query is answered immediately and silently (so panels never hang); callback payloads are
+  short typed payloads (`m:*`, `p:<id>:*`, `b:<id>:<i>`, `d:<id>:<i>`, `e`, `c`, `n`) decoded by an Effect
+  `Schema` union, and unknown payloads are ignored safely.
 - The gestures stay for parity: sending a sticker from one of the user's packs still removes it, and a photo
   with an emoji caption still creates a sticker.
 
-Flow state — which chat is removing or renaming — lives in memory in the Flows service with a 15-minute lazy
-expiry; a restart loses flows by design. Every panel edit falls back to sending a fresh panel when the old
-message can no longer be edited, and an unchanged message is answered as a no-op.
+Flow state — which chat is removing or renaming — lives in memory in the bot's grammY session with a
+15-minute lazy expiry; a restart loses flows by design. Every panel edit falls back to sending a fresh panel
+when the old message can no longer be edited, and an unchanged message is answered as a no-op.
 
 ## Consequences
 

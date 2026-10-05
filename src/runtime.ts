@@ -21,5 +21,5 @@ type AppServices = Layer.Success<typeof AppLayer>
 
 const runtime = ManagedRuntime.make(AppLayer)
 
-export { AppLayer, runtime }
+export { runtime }
 export type { AppServices }

@@ -1,6 +1,6 @@
 import { Option, Schema } from "effect"
 
-const MenuView = Schema.Literals(["main", "packs", "add", "help"])
+const MenuView = Schema.Literals(["main", "packs", "add", "help", "remove"])
 const PackAction = Schema.Literals(["open", "refresh", "remove", "rename", "browse"])
 
 const CallbackData = Schema.Union([

@@ -4,11 +4,11 @@ import type { DrainFn } from "evlog"
 import { Cause, Logger, Option, References } from "effect"
 import { createLogger, initLogger } from "evlog"
 
-const initLogging = (drain?: DrainFn): void => {
+const initLogging = (environment: string, drain?: DrainFn): void => {
   initLogger({
     env: {
       service: "sutekkapakku",
-      environment: Bun.env.NODE_ENV ?? "development",
+      environment,
     },
     ...(drain === undefined ? {} : { drain }),
   })
@@ -49,4 +49,4 @@ const evlogEffectLogger = Logger.make((options) => {
 
 const effectLoggerLayer = Logger.layer([evlogEffectLogger])
 
-export { effectLoggerLayer, evlogEffectLogger, initLogging }
+export { effectLoggerLayer, initLogging }

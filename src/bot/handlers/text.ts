@@ -2,6 +2,7 @@ import { Effect } from "effect"
 
 import type { BotContext } from "@/bot/context"
 
+import { clearFlow, getActiveFlow } from "@/bot/flows"
 import { notify } from "@/bot/notify"
 import { Packs } from "@/bot/packs"
 import { escapeHtml, packPanel, showPanel } from "@/bot/panels"
@@ -18,7 +19,7 @@ const createTextHandler =
     if (from === undefined || chatId === undefined || text === undefined) {
       return
     }
-    const flow = ctx.session.flow
+    const flow = getActiveFlow(ctx)
     if (flow?.kind !== "rename") {
       return
     }
@@ -55,7 +56,7 @@ const createTextHandler =
         if (result.kind === "retry") {
           return
         }
-        ctx.session.flow = undefined
+        clearFlow(ctx)
         yield* notify(chatId, `Renamed to <b>${escapeHtml(result.volume.title)}</b>.`, {
           parse_mode: "HTML",
         })

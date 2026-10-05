@@ -44,9 +44,11 @@ const volumeButtonLabel = (volume: StickerSet): string =>
 const mainMenu = (adminUsername: string, header = "🎒 <b>Sutekkapakku</b>"): Panel => {
   const keyboard = new InlineKeyboard()
     .text("📦 My packs", encode({ kind: "menu", view: "packs" }))
-    .text("➕ Add stickers", encode({ kind: "menu", view: "add" }))
+    .text("🗑 Remove a sticker", encode({ kind: "menu", view: "remove" }))
     .row()
+    .text("➕ Add stickers", encode({ kind: "menu", view: "add" }))
     .text("❓ Help", encode({ kind: "menu", view: "help" }))
+    .row()
     .url("💬 Contact", `https://t.me/${adminUsername}`)
   return {
     text: `${header}\n\nSend me a sticker and I'll add it to your packs. Use the buttons below to manage them.`,
@@ -90,7 +92,9 @@ const packPanel = (volume: StickerSet): Panel => {
       .text("🔄 Refresh", encode({ kind: "pack", volumeId: volume.id, action: "refresh" }))
       .row()
   }
-  keyboard.text("🏠 Menu", encode({ kind: "menu", view: "main" }))
+  keyboard
+    .text("⬅️ My packs", encode({ kind: "menu", view: "packs" }))
+    .text("🏠 Menu", encode({ kind: "menu", view: "main" }))
   const status =
     volume.archivedAt === null
       ? `${volume.stickerCount}/${STICKERS_PER_SET} stickers`
@@ -193,4 +197,3 @@ export {
   renamePrompt,
   showPanel,
 }
-export type { Panel }

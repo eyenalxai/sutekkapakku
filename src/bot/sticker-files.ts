@@ -47,4 +47,3 @@ const buildPhotoStickerInput = (
 })
 
 export { buildPhotoStickerInput, buildStickerInput }
-export type { BuildStickerInputParams }

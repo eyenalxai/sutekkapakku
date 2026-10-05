@@ -5,10 +5,12 @@ import { createLogger } from "evlog"
 
 import type { BotContext } from "@/bot/context"
 
+import { clearFlow, getActiveFlow } from "@/bot/flows"
 import { notify } from "@/bot/notify"
 import { Packs } from "@/bot/packs"
 import {
   NOT_REGISTERED_REPLY,
+  PACK_INVALID_REPLY,
   STICKER_NOT_IN_PACK_REPLY,
   STICKER_REMOVED_REPLY,
   buildStickerSetNotModifiedReply,
@@ -35,13 +37,19 @@ const removeSticker = (chatId: number, sticker: Sticker, volumeId: number, admin
     if (stickerSetName === undefined) {
       return
     }
-    const notModified = yield* packs
+    const outcome = yield* packs
       .removeSticker({ stickerSetName, stickerId: sticker.file_id, volumeId })
       .pipe(
-        Effect.as(false),
-        Effect.catchTag("StickerSetNotModified", () => Effect.succeed(true)),
+        Effect.as("REMOVED" as const),
+        Effect.catchTag("StickerSetNotModified", () => Effect.succeed("NOT_MODIFIED" as const)),
+        Effect.catchTag("StickerSetInvalid", () => Effect.succeed("INVALID" as const)),
       )
-    if (notModified) {
+    if (outcome === "INVALID") {
+      yield* packs.archiveVolume(volumeId, "INVALID")
+      yield* notify(chatId, PACK_INVALID_REPLY)
+      return
+    }
+    if (outcome === "NOT_MODIFIED") {
       yield* notify(chatId, buildStickerSetNotModifiedReply(adminUsername), {
         parse_mode: "HTML",
       })
@@ -66,7 +74,7 @@ const createStickerHandler =
       return
     }
 
-    const flow = ctx.session.flow
+    const flow = getActiveFlow(ctx)
     await runHandler(
       ctx,
       Effect.gen(function* stickerHandlerEffect() {
@@ -80,7 +88,7 @@ const createStickerHandler =
         }
 
         if (flow?.kind === "remove") {
-          ctx.session.flow = undefined
+          clearFlow(ctx)
           const volumes = yield* packs.listVolumes(user.id)
           const target =
             flow.volumeId === undefined
@@ -122,4 +130,3 @@ const createStickerHandler =
   }
 
 export { createStickerHandler }
-export type { StickerHandlerOptions }

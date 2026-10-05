@@ -7,6 +7,7 @@ import type { User } from "@/db/schema"
 
 import { deleteFromBrowse, startBrowse } from "@/bot/browse"
 import { decode } from "@/bot/callback-data"
+import { clearFlow, getActiveFlow, startFlow } from "@/bot/flows"
 import { loadVolumes } from "@/bot/handlers/shared"
 import { notify } from "@/bot/notify"
 import { Packs } from "@/bot/packs"
@@ -53,7 +54,12 @@ const handleMenuCallback = (params: CallbackParams & { readonly view: MenuView }
       yield* showPanel(chatId, messageId, helpPanel(adminUsername))
       return
     }
-    ctx.session.flow = undefined
+    if (view === "remove") {
+      startFlow(ctx, { kind: "remove" })
+      yield* showPanel(chatId, messageId, removePrompt())
+      return
+    }
+    clearFlow(ctx)
     yield* showPanel(chatId, messageId, mainMenu(adminUsername))
   })
 
@@ -80,12 +86,12 @@ const handlePackCallback = (
       return
     }
     if (action === "remove") {
-      ctx.session.flow = { kind: "remove", volumeId: volume.id }
+      startFlow(ctx, { kind: "remove", volumeId: volume.id })
       yield* showPanel(chatId, messageId, removePrompt(volume))
       return
     }
     if (action === "rename") {
-      ctx.session.flow = { kind: "rename", volumeId: volume.id }
+      startFlow(ctx, { kind: "rename", volumeId: volume.id })
       yield* showPanel(chatId, messageId, renamePrompt(volume))
       return
     }
@@ -101,7 +107,7 @@ const dispatch = (params: CallbackParams & { readonly callback: Callback }) =>
         return
       }
       case "done": {
-        ctx.session.flow = undefined
+        clearFlow(ctx)
         if (messageId !== undefined) {
           const telegram = yield* TelegramApi
           yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)
@@ -111,8 +117,8 @@ const dispatch = (params: CallbackParams & { readonly callback: Callback }) =>
         return
       }
       case "cancel": {
-        const flow = ctx.session.flow
-        ctx.session.flow = undefined
+        const flow = getActiveFlow(ctx)
+        clearFlow(ctx)
         if (flow?.kind === "browse" && flow.messageId === messageId && messageId !== undefined) {
           const telegram = yield* TelegramApi
           yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)

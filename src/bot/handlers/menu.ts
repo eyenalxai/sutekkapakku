@@ -2,6 +2,7 @@ import { Effect } from "effect"
 
 import type { BotContext } from "@/bot/context"
 
+import { startFlow } from "@/bot/flows"
 import { loadVolumes } from "@/bot/handlers/shared"
 import { notify } from "@/bot/notify"
 import { Packs } from "@/bot/packs"
@@ -117,7 +118,7 @@ const createRemoveHandler =
           yield* notify(chatId, NOT_REGISTERED_REPLY)
           return
         }
-        ctx.session.flow = { kind: "remove" }
+        startFlow(ctx, { kind: "remove" })
         yield* showPanel(chatId, undefined, removePrompt())
       }),
     )

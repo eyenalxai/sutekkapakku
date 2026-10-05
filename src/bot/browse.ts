@@ -4,6 +4,7 @@ import type { BotContext } from "@/bot/context"
 import type { PacksInterface } from "@/bot/packs"
 import type { StickerSet, User } from "@/db/schema"
 
+import { startFlow } from "@/bot/flows"
 import { loadVolumes } from "@/bot/handlers/shared"
 import { notify } from "@/bot/notify"
 import { browseKeyboard, packsPanel, showPanel } from "@/bot/panels"
@@ -72,12 +73,12 @@ const startBrowse = (params: BrowseParams) =>
     const message = yield* telegram.sendSticker(chatId, sticker.file_id, {
       reply_markup: browseKeyboard(volume.id, nextIndex, total),
     })
-    ctx.session.flow = {
+    startFlow(ctx, {
       kind: "browse",
       volumeId: volume.id,
       index: nextIndex,
       messageId: message.message_id,
-    }
+    })
   })
 
 const deleteFromBrowse = (params: DeleteParams) =>
@@ -129,12 +130,12 @@ const deleteFromBrowse = (params: DeleteParams) =>
     const message = yield* telegram.sendSticker(chatId, next.file_id, {
       reply_markup: browseKeyboard(volume.id, nextIndex, total),
     })
-    ctx.session.flow = {
+    startFlow(ctx, {
       kind: "browse",
       volumeId: volume.id,
       index: nextIndex,
       messageId: message.message_id,
-    }
+    })
   })
 
 export { deleteFromBrowse, startBrowse }

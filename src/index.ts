@@ -1,4 +1,5 @@
 import { run } from "@grammyjs/runner"
+import { Config, ConfigProvider, Effect } from "effect"
 import { createLogger } from "evlog"
 
 import { createBot } from "@/bot/bot"
@@ -8,7 +9,14 @@ import { initLogging } from "@/logger"
 import { runtime } from "@/runtime"
 import { startWebhookRuntime } from "@/server"
 
-initLogging()
+const environment = await Effect.runPromise(
+  Config.String("NODE_ENV").pipe(
+    Config.withDefault("development"),
+    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv())),
+  ),
+)
+
+initLogging(environment)
 
 const config = await runtime.runPromise(AppConfiguration)
 const database = await runtime.runPromise(Database)
@@ -27,7 +35,8 @@ startupLog.set({
 })
 
 const botCommands = [
-  { command: "start", description: "Main menu" },
+  { command: "start", description: "Start the bot" },
+  { command: "menu", description: "Main menu" },
   { command: "packs", description: "My sticker packs" },
   { command: "add", description: "How to add stickers" },
   { command: "remove", description: "Remove a sticker" },

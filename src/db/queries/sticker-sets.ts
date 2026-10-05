@@ -5,6 +5,8 @@ import type { StickerSetType } from "@/db/schema"
 
 import { stickerSets } from "@/db/schema"
 
+type ArchiveReason = "FULL" | "INVALID"
+
 const getStickerSetForUserByType = async (
   db: DbExecutor,
   userId: number,
@@ -55,7 +57,7 @@ const createStickerSet = async (
   return stickerSet
 }
 
-const archiveStickerSet = async (db: DbExecutor, id: number, reason: string) => {
+const archiveStickerSet = async (db: DbExecutor, id: number, reason: ArchiveReason) => {
   const [stickerSet] = await db
     .update(stickerSets)
     .set({ archivedAt: new Date(), archivedReason: reason })
@@ -92,3 +94,4 @@ export {
   updateStickerCount,
   updateStickerSetTitle,
 }
+export type { ArchiveReason }

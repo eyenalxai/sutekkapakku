@@ -14,15 +14,15 @@ in [docs/adr](./docs/adr).
 
 Open the bot and use the main menu — there is nothing to memorise:
 
-- `📦 My packs` opens the packs overview: one line per sticker type with the active pack's title and live
-  `n/120` count, a button per pack (active first, then archived volumes marked `(full)` or `(expired)`), and
-  `🔄 Refresh` to fetch current counts from Telegram.
+- `📦 My packs` opens the packs overview: one line per volume with its title and live `n/120` count (active
+  first, archived volumes marked `· full` or `· unavailable`), a button per volume, and `🔄 Refresh` to fetch
+  current counts from Telegram.
 - `🗑 Remove a sticker` starts a guided remove flow: send the sticker you want to remove, or step through the
   pack with the sticker browser (`◀️ i/n ▶️`, `🗑 Remove`, `✅ Done`) and remove stickers one by one.
-- The pack panel (opened from the overview) shows the title, count, and link, with `📎 Open in Telegram`,
-  `🗑 Remove a sticker`, `✏️ Rename`, and `🔍 Browse stickers`.
+- The pack panel (opened from the overview) shows the title, count, and link, with `👁 Open in Telegram`,
+  `🔍 Browse stickers`, `✏️ Rename`, `🗑 Remove a sticker`, `🔄 Refresh`, `⬅️ My packs`, and `🏠 Menu`.
 - Rename asks for a new title of 1–64 characters and rejects titles already taken by another pack.
-- Flows end with Cancel, and `/cancel` exits any flow.
+- Flows end with Cancel, `/cancel` exits any flow, and an idle flow expires after 15 minutes.
 
 Commands are registered with Telegram's menu button on startup: `/start`, `/menu`, `/packs`, `/add`,
 `/remove`, `/help`, and `/cancel`. Every panel is edited in place, so the chat does not fill with messages;

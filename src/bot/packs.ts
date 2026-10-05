@@ -2,6 +2,7 @@ import type { InputSticker, User as TelegramUser } from "grammy/types"
 
 import { Context, Effect, Layer } from "effect"
 
+import type { ArchiveReason } from "@/db/queries/sticker-sets"
 import type { StickerSet, StickerSetType, User } from "@/db/schema"
 import type {
   ChatUnavailable,
@@ -18,6 +19,7 @@ import type {
 import { notify } from "@/bot/notify"
 import { buildStickerSetName, buildStickerSetTitle } from "@/bot/sticker-pack"
 import { TelegramApi } from "@/bot/telegram-api"
+import { archiveVolume, refreshVolume } from "@/bot/volume-maintenance"
 import { DbExecutor, runQuery } from "@/db/database"
 import {
   archiveStickerSet,
@@ -83,6 +85,10 @@ interface PacksInterface {
   readonly refreshVolume: (
     volumeId: number,
   ) => Effect.Effect<StickerSet, PacksFailure, DbExecutor | TelegramApi>
+  readonly archiveVolume: (
+    volumeId: number,
+    reason: ArchiveReason,
+  ) => Effect.Effect<StickerSet | undefined, DatabaseError, DbExecutor>
 }
 
 const stickerSetLink = (volume: StickerSet): string =>
@@ -255,26 +261,6 @@ const renameVolume = Effect.fn("Packs.renameVolume")(function* renameVolumeProgr
   return updated
 })
 
-const refreshVolume = Effect.fn("Packs.refreshVolume")(function* refreshVolumeProgram(
-  volumeId: number,
-) {
-  const telegram = yield* TelegramApi
-  const { executor } = yield* DbExecutor
-  const volume = yield* runQuery("Packs.byId", () => getStickerSetById(executor, volumeId))
-  if (volume === undefined) {
-    return yield* Effect.die(new Error("volume not found"))
-  }
-  const stickerSet = yield* telegram.getStickerSet(volume.name)
-  const count = Math.min(Math.max(stickerSet.stickers.length, 0), 200)
-  const updated = yield* runQuery("Packs.refresh", () =>
-    updateStickerCount(executor, volumeId, count),
-  )
-  if (updated === undefined) {
-    return yield* Effect.die(new Error("refresh returned no row"))
-  }
-  return updated
-})
-
 class Packs extends Context.Service<Packs, PacksInterface>()("sutekkapakku/Packs") {
   static readonly layer = Layer.succeed(
     Packs,
@@ -285,6 +271,7 @@ class Packs extends Context.Service<Packs, PacksInterface>()("sutekkapakku/Packs
       removeSticker,
       renameVolume,
       refreshVolume,
+      archiveVolume,
     }),
   )
 }

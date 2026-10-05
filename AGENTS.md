@@ -35,9 +35,10 @@ Single-context: `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 - No backwards compatibility. Refactor freely; optimize for long-term maintenance and best practices.
 - Use subagents as much as possible, parallelize as much as possible. Do implementation work in separate rifts (git worktrees) and bring changes back by rebasing onto `main` — never merge.
 - Bun is the runtime, used properly: `bun --bun run <script>`, `bun --bun test`, `bun --bun x <tool>`.
-- All database access goes through Drizzle ORM. Never write raw SQL, even for migrations tooling — keep intermediate results in memory if needed.
-- Generate migrations with commands only: `bun run db:generate` (or `bun --bun x drizzle-kit generate --custom --name=<name>`). Never create migration files by hand.
-- No data loss is paramount: production data must remain intact and readable at every step.
+- Do not run dev servers or start the bot locally, and do not use a browser. Verify with `bun --bun run check` and the tests.
+- All database access goes through Drizzle ORM. Never write raw SQL, even for tooling or verification — keep intermediate results in memory if needed. The one exception is the SQL inside generated migration files.
+- Generate and apply migrations with commands only: `bun run db:generate`, `bun run db:migrate` (or `bun --bun x drizzle-kit generate --custom --name=<name>` for custom ones). Never create or edit migration files by hand.
+- No data loss is paramount: production data must remain intact and readable at every step, and nothing is dropped unless explicitly requested.
 - No re-exports and no barrel files. Import from the module that owns the code.
 - Place files where they belong; respect the project structure.
 - Do not write comments unless they explain a hard "why this way?" question that the code cannot answer itself.
@@ -45,6 +46,6 @@ Single-context: `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Testing
 
+- Do not add tests.
 - Do not test the Telegram Bot API. No fake Bot API servers, no handler round-trip harnesses, no assertions on API call payloads.
-- Only add a test when the logic is genuinely tricky — for example schema parity with production, restoring production data, or image-resizing edge cases. If behaviour is trivial or mirrors the implementation one-to-one, leave it untested.
-- Delete tests that no longer earn their place; an existing test is not a reason to keep it.
+- Existing tests are kept only while they cover genuine risk (restoring production data, schema parity with production, image-resizing edge cases). Delete tests that no longer earn their place; an existing test is not a reason to keep it.

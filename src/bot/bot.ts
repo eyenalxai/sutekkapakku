@@ -5,6 +5,7 @@ import { Bot } from "grammy"
 import type { BotContext } from "@/bot/context"
 import type { Db } from "@/db/client"
 
+import { createPhotoHandler } from "@/bot/handlers/photo"
 import { createStartHandler } from "@/bot/handlers/start"
 
 interface BotDependencies {
@@ -30,6 +31,7 @@ const logError = (operation: string, error: unknown, ctx: BotContext): void => {
 
 const createBot = (deps: BotDependencies): Bot<BotContext> => {
   const { adminUsername, apiRoot, apiToken, db } = deps
+  const fileApiRoot = apiRoot ?? "https://api.telegram.org"
   const bot = new Bot<BotContext>(apiToken, apiRoot === undefined ? {} : { client: { apiRoot } })
 
   bot.use(sequentialize((ctx: BotContext) => ctx.from?.id.toString()))
@@ -63,6 +65,8 @@ const createBot = (deps: BotDependencies): Bot<BotContext> => {
   })
 
   bot.command(["start", "help"], createStartHandler(adminUsername))
+
+  bot.on("message:photo", createPhotoHandler({ fileApiRoot }))
 
   bot.catch((botError) => {
     logError("update_error", botError.error, botError.ctx)

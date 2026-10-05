@@ -7,7 +7,7 @@ import { stickerSets } from "@/db/schema"
 
 type ArchiveReason = "FULL" | "INVALID"
 
-const getStickerSetForUserByType = async (
+const getActiveStickerSetForUserByType = async (
   db: DbExecutor,
   userId: number,
   stickerSetType: StickerSetType,
@@ -89,7 +89,7 @@ export {
   createStickerSet,
   getStickerSetById,
   getStickerSetByTitle,
-  getStickerSetForUserByType,
+  getActiveStickerSetForUserByType,
   getStickerSetsForUser,
   updateStickerCount,
   updateStickerSetTitle,

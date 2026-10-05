@@ -49,93 +49,93 @@ const loadStickerSet = (chatId: number, name: string) =>
     )
   })
 
-const startBrowse = (params: BrowseParams) =>
-  Effect.gen(function* startBrowseEffect() {
-    const { chatId, ctx, index, messageId, volume } = params
-    const telegram = yield* TelegramApi
-    const stickerSet = yield* loadStickerSet(chatId, volume.name)
-    if (stickerSet === null) {
-      return
-    }
-    const total = stickerSet.stickers.length
-    if (total === 0) {
-      yield* notify(chatId, "This pack is empty — send me a sticker to fill it!")
-      return
-    }
-    const nextIndex = Math.min(Math.max(index, 0), total - 1)
-    const sticker = stickerSet.stickers[nextIndex]
-    if (sticker === undefined) {
-      return
-    }
-    if (messageId !== undefined) {
-      yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)
-    }
-    const message = yield* telegram.sendSticker(chatId, sticker.file_id, {
-      reply_markup: browseKeyboard(volume.id, nextIndex, total),
-    })
-    startFlow(ctx, {
-      kind: "browse",
-      volumeId: volume.id,
-      index: nextIndex,
-      messageId: message.message_id,
-    })
+const startBrowse = Effect.fn("Browse.start")(function* startBrowseProgram(params: BrowseParams) {
+  const { chatId, ctx, index, messageId, volume } = params
+  const telegram = yield* TelegramApi
+  const stickerSet = yield* loadStickerSet(chatId, volume.name)
+  if (stickerSet === null) {
+    return
+  }
+  const total = stickerSet.stickers.length
+  if (total === 0) {
+    yield* notify(chatId, "This pack is empty — send me a sticker to fill it!")
+    return
+  }
+  const nextIndex = Math.min(Math.max(index, 0), total - 1)
+  const sticker = stickerSet.stickers[nextIndex]
+  if (sticker === undefined) {
+    return
+  }
+  if (messageId !== undefined) {
+    yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)
+  }
+  const message = yield* telegram.sendSticker(chatId, sticker.file_id, {
+    reply_markup: browseKeyboard(volume.id, nextIndex, total),
   })
+  startFlow(ctx, {
+    kind: "browse",
+    volumeId: volume.id,
+    index: nextIndex,
+    messageId: message.message_id,
+  })
+})
 
-const deleteFromBrowse = (params: DeleteParams) =>
-  Effect.gen(function* deleteFromBrowseEffect() {
-    const { adminUsername, chatId, ctx, index, messageId, packs, user, volume } = params
-    const telegram = yield* TelegramApi
-    const stickerSet = yield* loadStickerSet(chatId, volume.name)
-    if (stickerSet === null) {
-      return
-    }
-    const sticker = stickerSet.stickers[index]
-    if (sticker === undefined) {
-      yield* startBrowse({ chatId, ctx, index, messageId, volume })
-      return
-    }
-    yield* packs
-      .removeSticker({
-        stickerSetName: volume.name,
-        stickerId: sticker.file_id,
-        volumeId: volume.id,
-      })
-      .pipe(
-        Effect.catchTag("StickerSetNotModified", () =>
-          notify(chatId, buildStickerSetNotModifiedReply(adminUsername), { parse_mode: "HTML" }),
-        ),
-      )
-    const updatedSet = yield* loadStickerSet(chatId, volume.name)
-    if (updatedSet === null) {
-      return
-    }
-    const total = updatedSet.stickers.length
-    if (total === 0) {
-      if (messageId !== undefined) {
-        yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)
-      }
-      yield* notify(chatId, "That was the last sticker — the pack is empty now.")
-      const volumes = yield* loadVolumes(packs, user.id, false)
-      yield* showPanel(chatId, undefined, packsPanel(volumes))
-      return
-    }
-    const nextIndex = Math.min(Math.max(index, 0), total - 1)
-    const next = updatedSet.stickers[nextIndex]
-    if (next === undefined) {
-      return
-    }
+const deleteFromBrowse = Effect.fn("Browse.delete")(function* deleteFromBrowseProgram(
+  params: DeleteParams,
+) {
+  const { adminUsername, chatId, ctx, index, messageId, packs, user, volume } = params
+  const telegram = yield* TelegramApi
+  const stickerSet = yield* loadStickerSet(chatId, volume.name)
+  if (stickerSet === null) {
+    return
+  }
+  const sticker = stickerSet.stickers[index]
+  if (sticker === undefined) {
+    yield* startBrowse({ chatId, ctx, index, messageId, volume })
+    return
+  }
+  yield* packs
+    .removeSticker({
+      stickerSetName: volume.name,
+      stickerId: sticker.file_id,
+      volumeId: volume.id,
+    })
+    .pipe(
+      Effect.catchTag("StickerSetNotModified", () =>
+        notify(chatId, buildStickerSetNotModifiedReply(adminUsername), { parse_mode: "HTML" }),
+      ),
+    )
+  const updatedSet = yield* loadStickerSet(chatId, volume.name)
+  if (updatedSet === null) {
+    return
+  }
+  const total = updatedSet.stickers.length
+  if (total === 0) {
     if (messageId !== undefined) {
       yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)
     }
-    const message = yield* telegram.sendSticker(chatId, next.file_id, {
-      reply_markup: browseKeyboard(volume.id, nextIndex, total),
-    })
-    startFlow(ctx, {
-      kind: "browse",
-      volumeId: volume.id,
-      index: nextIndex,
-      messageId: message.message_id,
-    })
+    yield* notify(chatId, "That was the last sticker — the pack is empty now.")
+    const volumes = yield* loadVolumes(packs, user.id, false)
+    yield* showPanel(chatId, undefined, packsPanel(volumes))
+    return
+  }
+  const nextIndex = Math.min(Math.max(index, 0), total - 1)
+  const next = updatedSet.stickers[nextIndex]
+  if (next === undefined) {
+    return
+  }
+  if (messageId !== undefined) {
+    yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)
+  }
+  const message = yield* telegram.sendSticker(chatId, next.file_id, {
+    reply_markup: browseKeyboard(volume.id, nextIndex, total),
   })
+  startFlow(ctx, {
+    kind: "browse",
+    volumeId: volume.id,
+    index: nextIndex,
+    messageId: message.message_id,
+  })
+})
 
 export { deleteFromBrowse, startBrowse }

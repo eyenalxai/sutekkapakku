@@ -26,7 +26,7 @@ import {
   createStickerSet,
   getStickerSetById,
   getStickerSetByTitle,
-  getStickerSetForUserByType,
+  getActiveStickerSetForUserByType,
   getStickerSetsForUser,
   updateStickerCount,
   updateStickerSetTitle,
@@ -175,7 +175,7 @@ const activeVolume = Effect.fn("Packs.activeVolume")(function* activeVolumeProgr
 ) {
   const { executor } = yield* DbExecutor
   return yield* runQuery("Packs.activeVolume", () =>
-    getStickerSetForUserByType(executor, userId, stickerSetType),
+    getActiveStickerSetForUserByType(executor, userId, stickerSetType),
   )
 })
 
@@ -185,7 +185,7 @@ const addSticker = Effect.fn("Packs.addSticker")(function* addStickerProgram(
   const telegram = yield* TelegramApi
   const { executor } = yield* DbExecutor
   const active = yield* runQuery("Packs.activeVolume", () =>
-    getStickerSetForUserByType(executor, params.user.id, params.stickerSetType),
+    getActiveStickerSetForUserByType(executor, params.user.id, params.stickerSetType),
   )
   if (active === undefined) {
     const created = yield* createVolume(params)

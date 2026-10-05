@@ -238,11 +238,17 @@ class TelegramApi extends Context.Service<TelegramApi, TelegramApiInterface>()(
             isRateLimited,
           ),
         deleteStickerFromSet: (stickerSetName, stickerId) =>
-          callStickerSet("deleteStickerFromSet", stickerSetName, () =>
-            api.deleteStickerFromSet(stickerId),
+          retry(
+            callStickerSet("deleteStickerFromSet", stickerSetName, () =>
+              api.deleteStickerFromSet(stickerId),
+            ),
+            isRateLimited,
           ),
         setStickerSetTitle: (name, title) =>
-          callStickerSet("setStickerSetTitle", name, () => api.setStickerSetTitle(name, title)),
+          retry(
+            callStickerSet("setStickerSetTitle", name, () => api.setStickerSetTitle(name, title)),
+            isTransient,
+          ),
         setWebhook: (url) =>
           retry(
             call("setWebhook", () => api.setWebhook(url)),

@@ -4,7 +4,7 @@ import path from "node:path"
 
 import type { StickerSetType } from "@/db/schema"
 
-import { createStickerSet, getStickerSetForUserByType } from "@/db/queries/sticker-sets"
+import { createStickerSet, getActiveStickerSetForUserByType } from "@/db/queries/sticker-sets"
 import { createUser, getUserByTelegramId } from "@/db/queries/users"
 import { stickerSets, users } from "@/db/schema"
 
@@ -74,7 +74,7 @@ dataTest(
       )
       await Promise.all(
         allStickerSets.map(async (stickerSet) => {
-          const fetched = await getStickerSetForUserByType(
+          const fetched = await getActiveStickerSetForUserByType(
             db,
             stickerSet.userId,
             stickerSet.stickerSetType,
@@ -113,7 +113,7 @@ dataTest(
       expect(freshAnimated).toBeDefined()
       expect(freshVideo).toBeDefined()
 
-      const fetchedRegular = await getStickerSetForUserByType(db, freshUser.id, "REGULAR")
+      const fetchedRegular = await getActiveStickerSetForUserByType(db, freshUser.id, "REGULAR")
       expect(fetchedRegular?.name).toBe("data_preservation_regular")
 
       const [finalUserCount] = await db.select({ value: count() }).from(users)

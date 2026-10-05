@@ -20,18 +20,18 @@ class Users extends Context.Service<Users, UsersInterface>()("sutekkapakku/Users
   static readonly layer = Layer.succeed(
     Users,
     Users.of({
-      findByTelegramId: (telegramId) =>
-        Effect.gen(function* findByTelegramIdEffect() {
-          const { executor } = yield* DbExecutorService
-          return yield* runQuery("Users.findByTelegramId", () =>
-            getUserByTelegramId(executor, telegramId),
-          )
-        }),
-      register: (telegramId) =>
-        Effect.gen(function* registerEffect() {
-          const { executor } = yield* DbExecutorService
-          return yield* runQuery("Users.register", () => createUser(executor, telegramId))
-        }),
+      findByTelegramId: Effect.fn("Users.findByTelegramId")(function* findByTelegramIdProgram(
+        telegramId: string,
+      ) {
+        const { executor } = yield* DbExecutorService
+        return yield* runQuery("Users.findByTelegramId", () =>
+          getUserByTelegramId(executor, telegramId),
+        )
+      }),
+      register: Effect.fn("Users.register")(function* registerProgram(telegramId: string) {
+        const { executor } = yield* DbExecutorService
+        return yield* runQuery("Users.register", () => createUser(executor, telegramId))
+      }),
     }),
   )
 }

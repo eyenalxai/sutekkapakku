@@ -26,9 +26,22 @@ Single-context: `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 
 - Runtime: Bun (`bun --bun ...` — never fall back to Node)
 - Bot framework: grammY
+- Core: Effect v4 (`effect@4.0.0` exact; 4.0.1 is blocked by the release quarantine)
 - ORM: Drizzle ORM against PostgreSQL
 - Deployment: Railway (Infrastructure as Code in `.railway/railway.ts` using the `railway` SDK; Railpack builder, no Dockerfile)
 - Linting: oxlint
+
+### Effect
+
+- Services use `Context.Service`, `Layer.effect`, and `Service.of`; wiring lives in layers.
+- Operations use `Effect.fn("Domain.operation")`; expected failures are `Schema.TaggedError` classes.
+- Services own their errors: grammY/HTTP failures are translated at the adapter, and the error-to-reply
+  mapping lives in one place.
+- Read environment through Effect `Config` recipes; do not read `Bun.env`/`process.env` elsewhere.
+- Log through `Effect.log*`; the logger layer bridges into evlog wide events.
+- Retry lives only in the Telegram adapter, using a bounded `Schedule` that honours `retry_after`; do not add
+  grammY's `auto-retry`.
+- Never use `as any` or casts to satisfy Effect typing.
 
 ## Working rules
 

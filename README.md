@@ -81,6 +81,11 @@ bun run db:check      # check migration consistency
 
 Migrations must stay additive: no dropped or renamed columns, no data rewrites.
 
+Existing databases that predate the journal (production included) are baselined once before their first
+`db:migrate`: the `drizzle.__drizzle_migrations` row for the init migration is restored from the captured
+baseline seed (`migration-journal-init-*.dump` in the backup directory). After that, `db:migrate` records
+and applies new migrations normally.
+
 ### Deployment
 
 Railway is described in `.railway/railway.ts` (TypeScript Infrastructure as Code using the `railway` SDK).

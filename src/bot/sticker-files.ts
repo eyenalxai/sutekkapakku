@@ -3,11 +3,11 @@ import type { InputSticker, Sticker } from "grammy/types"
 import { Effect } from "effect"
 import { InputFile } from "grammy"
 
-import type { TelegramApiInterface } from "@/bot/telegram-api"
 import type { StickerSetType } from "@/db/schema"
 
+import { TelegramApi } from "@/bot/telegram-api"
+
 interface BuildStickerInputParams {
-  readonly telegram: TelegramApiInterface
   readonly sticker: Sticker
   readonly stickerSetType: StickerSetType
   readonly emoji: string
@@ -15,7 +15,8 @@ interface BuildStickerInputParams {
 
 const buildStickerInput = (params: BuildStickerInputParams) =>
   Effect.gen(function* buildStickerInputEffect() {
-    const { emoji, sticker, stickerSetType, telegram } = params
+    const { emoji, sticker, stickerSetType } = params
+    const telegram = yield* TelegramApi
     if (stickerSetType === "ANIMATED" || stickerSetType === "VIDEO") {
       const bytes = yield* telegram.downloadFile(sticker.file_id)
       const format = stickerSetType === "ANIMATED" ? "animated" : "video"

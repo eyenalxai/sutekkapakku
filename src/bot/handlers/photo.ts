@@ -4,10 +4,10 @@ import type { BotContext } from "@/bot/context"
 
 import { firstEmoji } from "@/bot/emoji"
 import { notify } from "@/bot/notify"
+import { Packs } from "@/bot/packs"
 import { getLargestPhoto, resizePhotoToStickerJpeg } from "@/bot/photos"
 import { runHandler } from "@/bot/run"
 import { buildPhotoStickerInput } from "@/bot/sticker-files"
-import { addStickerToUserPack } from "@/bot/sticker-set-service"
 import { TelegramApi } from "@/bot/telegram-api"
 import { Users } from "@/bot/users"
 
@@ -51,6 +51,7 @@ const createPhotoHandler =
       ctx,
       Effect.gen(function* photoHandlerEffect() {
         const users = yield* Users
+        const packs = yield* Packs
         const telegram = yield* TelegramApi
 
         const user = yield* users.findByTelegramId(String(from.id))
@@ -67,13 +68,13 @@ const createPhotoHandler =
           `${largestPhoto.file_unique_id}.png`,
           emoji,
         )
-        yield* addStickerToUserPack({
+        yield* packs.addSticker({
           chatId,
-          sticker,
-          stickerSetType: "REGULAR",
+          user,
           telegramUser: from,
           telegramUsername: username,
-          user,
+          sticker,
+          stickerSetType: "REGULAR",
         })
       }),
     )

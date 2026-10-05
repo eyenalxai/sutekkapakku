@@ -49,6 +49,16 @@ class InvalidConfiguration extends Schema.TaggedError<InvalidConfiguration>()(
   },
 ) {}
 
+class VolumeTitleInvalid extends Schema.TaggedError<VolumeTitleInvalid>()("VolumeTitleInvalid", {
+  title: Schema.String,
+  minimum: Schema.Number,
+  maximum: Schema.Number,
+}) {}
+
+class VolumeTitleTaken extends Schema.TaggedError<VolumeTitleTaken>()("VolumeTitleTaken", {
+  title: Schema.String,
+}) {}
+
 export {
   ChatUnavailable,
   DatabaseError,
@@ -58,4 +68,6 @@ export {
   StickerSetNotModified,
   StickerSetTooMuch,
   TelegramApiError,
+  VolumeTitleInvalid,
+  VolumeTitleTaken,
 }

@@ -14,14 +14,18 @@ const randomLetterString = (length: number): string => {
   return result
 }
 
-const buildStickerSetTitle = (stickerSetType: StickerSetType, username: string): string => {
-  if (stickerSetType === "ANIMATED") {
-    return `${username}'s Greatest Animated Hits`
-  }
-  if (stickerSetType === "VIDEO") {
-    return `${username}'s Greatest Video Hits`
-  }
-  return `${username}'s Greatest Hits`
+const buildStickerSetTitle = (
+  stickerSetType: StickerSetType,
+  username: string,
+  ordinal = 1,
+): string => {
+  const base =
+    stickerSetType === "ANIMATED"
+      ? `${username}'s Greatest Animated Hits`
+      : stickerSetType === "VIDEO"
+        ? `${username}'s Greatest Video Hits`
+        : `${username}'s Greatest Hits`
+  return ordinal > 1 ? `${base} Vol. ${ordinal}` : base
 }
 
 const buildStickerSetName = (username: string, botUsername: string): string =>

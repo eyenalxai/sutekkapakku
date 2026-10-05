@@ -6,14 +6,11 @@ import { createLogger } from "evlog"
 import type { BotContext } from "@/bot/context"
 
 import { notify } from "@/bot/notify"
+import { Packs } from "@/bot/packs"
 import { runHandler } from "@/bot/run"
 import { buildStickerInput } from "@/bot/sticker-files"
 import { detectStickerSetType } from "@/bot/sticker-pack"
-import { addStickerToUserPack } from "@/bot/sticker-set-service"
-import { TelegramApi } from "@/bot/telegram-api"
 import { Users } from "@/bot/users"
-import { DbExecutor, runQuery } from "@/db/database"
-import { getStickerSetForUserByType } from "@/db/queries/sticker-sets"
 
 interface StickerHandlerOptions {
   adminUsername: string
@@ -34,17 +31,19 @@ const logIgnoredSticker = (ctx: BotContext, userId: number): void => {
   log.emit()
 }
 
-const removeSticker = (chatId: number, sticker: Sticker, adminUsername: string) =>
+const removeSticker = (chatId: number, sticker: Sticker, volumeId: number, adminUsername: string) =>
   Effect.gen(function* removeStickerEffect() {
-    const telegram = yield* TelegramApi
+    const packs = yield* Packs
     const stickerSetName = sticker.set_name
     if (stickerSetName === undefined) {
       return
     }
-    const notModified = yield* telegram.deleteStickerFromSet(stickerSetName, sticker.file_id).pipe(
-      Effect.as(false),
-      Effect.catchTag("StickerSetNotModified", () => Effect.succeed(true)),
-    )
+    const notModified = yield* packs
+      .removeSticker({ stickerSetName, stickerId: sticker.file_id, volumeId })
+      .pipe(
+        Effect.as(false),
+        Effect.catchTag("StickerSetNotModified", () => Effect.succeed(true)),
+      )
     if (notModified) {
       yield* notify(chatId, buildStickerSetNotModifiedReply(adminUsername), {
         parse_mode: "HTML",
@@ -74,8 +73,7 @@ const createStickerHandler =
       ctx,
       Effect.gen(function* stickerHandlerEffect() {
         const users = yield* Users
-        const telegram = yield* TelegramApi
-        const { executor } = yield* DbExecutor
+        const packs = yield* Packs
 
         const user = yield* users.findByTelegramId(String(from.id))
         if (user === undefined) {
@@ -83,12 +81,10 @@ const createStickerHandler =
           return
         }
 
-        const stickerSetType = detectStickerSetType(sticker)
-        const existingSet = yield* runQuery("getStickerSetForUserByType", () =>
-          getStickerSetForUserByType(executor, user.id, stickerSetType),
-        )
-        if (existingSet !== undefined && sticker.set_name === existingSet.name) {
-          yield* removeSticker(chatId, sticker, adminUsername)
+        const volumes = yield* packs.listVolumes(user.id)
+        const ownVolume = volumes.find((volume) => volume.name === sticker.set_name)
+        if (ownVolume !== undefined) {
+          yield* removeSticker(chatId, sticker, ownVolume.id, adminUsername)
           return
         }
 
@@ -97,20 +93,16 @@ const createStickerHandler =
           return
         }
 
-        const stickerInput = yield* buildStickerInput({
-          telegram,
-          sticker,
-          stickerSetType,
-          emoji,
-        })
+        const stickerSetType = detectStickerSetType(sticker)
+        const stickerInput = yield* buildStickerInput({ sticker, stickerSetType, emoji })
 
-        yield* addStickerToUserPack({
+        yield* packs.addSticker({
           chatId,
-          sticker: stickerInput,
-          stickerSetType,
+          user,
           telegramUser: from,
           telegramUsername,
-          user,
+          sticker: stickerInput,
+          stickerSetType,
         })
       }),
     )

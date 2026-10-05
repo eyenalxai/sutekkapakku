@@ -1,5 +1,6 @@
 import { ConfigProvider, Layer, ManagedRuntime } from "effect"
 
+import { Packs } from "@/bot/packs"
 import { TelegramApi } from "@/bot/telegram-api"
 import { Users } from "@/bot/users"
 import { AppConfiguration } from "@/config"
@@ -12,6 +13,7 @@ const AppLayer = Layer.mergeAll(
   Database.layer,
   TelegramApi.layer,
   Users.layer,
+  Packs.layer,
   effectLoggerLayer,
 ).pipe(Layer.provideMerge(AppConfiguration.layer), Layer.provide(ConfigProviderLayer))
 

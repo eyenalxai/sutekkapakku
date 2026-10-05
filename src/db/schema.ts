@@ -17,6 +17,9 @@ const stickerSets = pgTable("sticker_set", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { name: "sticker_set_user_id_fkey" }),
+  stickerCount: integer("sticker_count").default(0).notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  archivedReason: varchar("archived_reason", { length: 32 }),
 })
 
 type User = typeof users.$inferSelect

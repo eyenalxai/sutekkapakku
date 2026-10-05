@@ -48,7 +48,6 @@ const createPhotoHandler =
     }
 
     await runHandler(
-      ctx,
       Effect.gen(function* photoHandlerEffect() {
         const users = yield* Users
         const packs = yield* Packs

@@ -20,7 +20,6 @@ const createMenuHandler =
       return
     }
     await runHandler(
-      ctx,
       Effect.gen(function* menuHandlerEffect() {
         const users = yield* Users
         const existing = yield* users.findByTelegramId(String(from.id))
@@ -41,7 +40,6 @@ const createPacksHandler =
       return
     }
     await runHandler(
-      ctx,
       Effect.gen(function* packsHandlerEffect() {
         const users = yield* Users
         const packs = yield* Packs
@@ -64,7 +62,6 @@ const createAddHandler =
       return
     }
     await runHandler(
-      ctx,
       Effect.gen(function* addHandlerEffect() {
         yield* showPanel(chatId, undefined, addPanel())
       }),
@@ -79,7 +76,6 @@ const createHelpHandler =
       return
     }
     await runHandler(
-      ctx,
       Effect.gen(function* helpHandlerEffect() {
         yield* showPanel(chatId, undefined, helpPanel(adminUsername))
       }),
@@ -95,7 +91,6 @@ const createRemoveHandler =
       return
     }
     await runHandler(
-      ctx,
       Effect.gen(function* removeHandlerEffect() {
         const users = yield* Users
         const user = yield* users.findByTelegramId(String(from.id))
@@ -119,7 +114,6 @@ const createCancelHandler =
     }
     ctx.session.flow = undefined
     await runHandler(
-      ctx,
       Effect.gen(function* cancelHandlerEffect() {
         yield* showPanel(chatId, undefined, mainMenu(adminUsername, from.first_name))
       }),

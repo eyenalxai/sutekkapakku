@@ -178,7 +178,6 @@ const createCallbackHandler =
     const data = callbackQuery.data
     const callback = data === undefined ? undefined : decode(data)
     await runHandler(
-      ctx,
       Effect.gen(function* callbackHandlerEffect() {
         const telegram = yield* TelegramApi
         yield* telegram.answerCallbackQuery(callbackQuery.id).pipe(Effect.ignore)

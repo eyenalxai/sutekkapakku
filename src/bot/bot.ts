@@ -3,7 +3,6 @@ import { createLogger } from "evlog"
 import { Bot, session } from "grammy"
 
 import type { BotContext, SessionData } from "@/bot/context"
-import type { DatabaseInterface } from "@/db/database"
 
 import { createCallbackHandler } from "@/bot/handlers/callbacks"
 import {
@@ -22,7 +21,6 @@ import { TelegramApiError } from "@/errors"
 interface BotDependencies {
   apiToken: string
   adminUsername: string
-  database: DatabaseInterface
   apiRoot?: string
 }
 
@@ -41,7 +39,7 @@ const logError = (operation: string, error: unknown, ctx: BotContext): void => {
 }
 
 const createBot = (deps: BotDependencies): Bot<BotContext> => {
-  const { adminUsername, apiRoot, apiToken, database } = deps
+  const { adminUsername, apiRoot, apiToken } = deps
   const bot = new Bot<BotContext>(apiToken, apiRoot === undefined ? {} : { client: { apiRoot } })
 
   bot.use(
@@ -75,10 +73,7 @@ const createBot = (deps: BotDependencies): Bot<BotContext> => {
 
   bot.use(async (ctx, next) => {
     try {
-      await database.db.transaction(async (tx) => {
-        ctx.dbTx = tx
-        await next()
-      })
+      await next()
     } catch (error) {
       if (ctx.callbackQuery !== undefined) {
         throw error

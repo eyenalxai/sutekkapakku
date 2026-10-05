@@ -4,7 +4,6 @@ import { createLogger } from "evlog"
 
 import { createBot } from "@/bot/bot"
 import { AppConfiguration, tokenValue } from "@/config"
-import { Database } from "@/db/database"
 import { initLogging } from "@/logger"
 import { runtime } from "@/runtime"
 import { startWebhookRuntime } from "@/server"
@@ -19,12 +18,10 @@ const environment = await Effect.runPromise(
 initLogging(environment)
 
 const config = await runtime.runPromise(AppConfiguration)
-const database = await runtime.runPromise(Database)
 
 const bot = createBot({
   adminUsername: config.adminUsername,
   apiToken: tokenValue(config),
-  database,
 })
 
 const startupLog = createLogger({ operation: "startup" })

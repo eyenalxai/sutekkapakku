@@ -76,7 +76,6 @@ const createStickerHandler =
 
     const flow = getActiveFlow(ctx)
     await runHandler(
-      ctx,
       Effect.gen(function* stickerHandlerEffect() {
         const users = yield* Users
         const packs = yield* Packs

@@ -24,7 +24,6 @@ const createTextHandler =
       return
     }
     await runHandler(
-      ctx,
       Effect.gen(function* textHandlerEffect() {
         const users = yield* Users
         const packs = yield* Packs

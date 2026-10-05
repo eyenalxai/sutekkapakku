@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "sutekkapakku",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun --bun src/index.ts",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint --type-aware",
+    "lint:fix": "oxlint --type-aware --fix",
+    "tsc": "tsc --noEmit",
+    "test": "bun test",
+    "check": "bun run format:check && bun run lint && bun run tsc && bun run test",
+    "db:generate": "drizzle-kit generate",
+    "db:check": "drizzle-kit check",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@grammyjs/runner": "2.0.3",
+    "drizzle-orm": "1.0.0-rc.5-5935859",
+    "emoji-regex": "11.0.0",
+    "evlog": "2.29.0",
+    "grammy": "1.46.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "drizzle-kit": "1.0.0-rc.5-5935859",
+    "oxfmt": "0.67.0",
+    "oxlint": "1.82.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "railway": "3.11.0",
+    "typescript": "7.0.2"
+  },
+  "packageManager": "bun@1.4.2"
+}

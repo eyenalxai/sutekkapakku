@@ -112,3 +112,9 @@ cython_debug/
 .DS_Store
 /.env_local
 /.idea/codeStyles/codeStyleConfig.xml
+
+# Bun / TypeScript
+node_modules/
+.env*
+!.env.example
+.evlog/

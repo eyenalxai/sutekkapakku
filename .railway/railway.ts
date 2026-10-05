@@ -10,6 +10,7 @@ export default defineRailway(() => {
 
   const postgres = service("Postgres", {
     source: image("ghcr.io/railwayapp-templates/timescale-postgis-ssl:pg15-ts2.12"),
+    build: { builder: "RAILPACK" },
     replicas: { "us-west2": 1 },
     networking: { privateNetworkEndpoint: "postgres", tcpProxies: { "5432": {} } },
     volumeMounts: { "/var/lib/postgresql/data": postgresData },
@@ -33,7 +34,8 @@ export default defineRailway(() => {
 
   const app = service("sutekkapakku", {
     source: github("eyenalxai/sutekkapakku", { checkSuites: false }),
-    build: { builder: "RAILPACK" },
+    // `railway config apply` skips nulls, so "" replaces the legacy `poetry install` command.
+    build: { builder: "RAILPACK", buildCommand: "" },
     start: "bun --bun run src/index.ts",
     healthcheck: "/health",
     replicas: { "us-west2": 1 },

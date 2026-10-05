@@ -34,7 +34,7 @@ export default defineRailway(() => {
 
   const app = service("sutekkapakku", {
     source: github("eyenalxai/sutekkapakku", { checkSuites: false }),
-    build: { builder: "NIXPACKS", buildCommand: "bun install --frozen-lockfile" },
+    build: { builder: "RAILPACK" },
     start: "bun --bun run src/index.ts",
     healthcheck: "/health",
     replicas: { "us-west2": 1 },

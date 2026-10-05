@@ -42,3 +42,9 @@ Single-context: `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 - Place files where they belong; respect the project structure.
 - Do not write comments unless they explain a hard "why this way?" question that the code cannot answer itself.
 - Do not suppress oxlint rules unless absolutely justified; surface every suppression in the change description.
+
+## Testing
+
+- Do not test the Telegram Bot API. No fake Bot API servers, no handler round-trip harnesses, no assertions on API call payloads.
+- Only add a test when the logic is genuinely tricky — for example schema parity with production, restoring production data, or image-resizing edge cases. If behaviour is trivial or mirrors the implementation one-to-one, leave it untested.
+- Delete tests that no longer earn their place; an existing test is not a reason to keep it.

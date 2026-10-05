@@ -2,21 +2,21 @@ import { run } from "@grammyjs/runner"
 import { createLogger } from "evlog"
 
 import { createBot } from "@/bot/bot"
-import { loadConfig } from "@/config"
-import { createDb } from "@/db/client"
+import { AppConfiguration, tokenValue } from "@/config"
+import { Database } from "@/db/database"
 import { initLogging } from "@/logger"
+import { runtime } from "@/runtime"
 import { startWebhookRuntime } from "@/server"
-
-const config = loadConfig(Bun.env)
 
 initLogging()
 
-const db = createDb(config.databaseUrl)
+const config = await runtime.runPromise(AppConfiguration)
+const database = await runtime.runPromise(Database)
 
 const bot = createBot({
   adminUsername: config.adminUsername,
-  apiToken: config.apiToken,
-  db,
+  apiToken: tokenValue(config),
+  database,
 })
 
 const startupLog = createLogger({ operation: "startup" })
@@ -44,6 +44,7 @@ const shutdown = async (signal: string): Promise<void> => {
   log.set({ signal })
   await runner?.stop()
   await server?.stop(true)
+  await runtime.dispose()
   log.set({ event: "shutdown_complete" })
   log.emit()
   process.exit(0)

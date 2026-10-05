@@ -1,6 +1,10 @@
+import { Effect } from "effect"
+
 import type { BotContext } from "@/bot/context"
 
-import { createUser, getUserByTelegramId } from "@/db/queries/users"
+import { notify } from "@/bot/notify"
+import { runHandler } from "@/bot/run"
+import { Users } from "@/bot/users"
 
 const buildHelpText = (adminUsername: string): string =>
   "Send me a sticker and I'll put it in your personal sticker pack.\n" +
@@ -16,22 +20,28 @@ const createStartHandler =
   (adminUsername: string) =>
   async (ctx: BotContext): Promise<void> => {
     const from = ctx.from
-    if (from === undefined) {
+    const chatId = ctx.chat?.id
+    if (from === undefined || chatId === undefined) {
       return
     }
 
     const helpText = buildHelpText(adminUsername)
     const telegramId = String(from.id)
     const name = fullName(from.first_name, from.last_name)
-    const user = await getUserByTelegramId(ctx.dbTx, telegramId)
 
-    if (user === undefined) {
-      await createUser(ctx.dbTx, telegramId)
-      await ctx.reply(`Welcome, ${name}!\n\n${helpText}`, { parse_mode: "HTML" })
-      return
-    }
-
-    await ctx.reply(`Hello, ${name}!\n\n${helpText}`, { parse_mode: "HTML" })
+    await runHandler(
+      ctx,
+      Effect.gen(function* startHandlerEffect() {
+        const users = yield* Users
+        const user = yield* users.findByTelegramId(telegramId)
+        if (user === undefined) {
+          yield* users.register(telegramId)
+          yield* notify(chatId, `Welcome, ${name}!\n\n${helpText}`, { parse_mode: "HTML" })
+          return
+        }
+        yield* notify(chatId, `Hello, ${name}!\n\n${helpText}`, { parse_mode: "HTML" })
+      }),
+    )
   }
 
 export { createStartHandler }

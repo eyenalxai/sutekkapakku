@@ -4,16 +4,16 @@ import { createLogger } from "evlog"
 import { webhookCallback } from "grammy"
 
 import type { BotContext } from "@/bot/context"
-import type { Config } from "@/config"
+import type { AppConfigShape } from "@/config"
 
 interface StartServerOptions {
   bot: Bot<BotContext>
-  config: Config
+  config: AppConfigShape
 }
 
 interface WebhookRuntimeOptions {
   bot: Bot<BotContext>
-  config: Config
+  config: AppConfigShape
 }
 
 const HEALTH_PATH = "/health"
@@ -23,19 +23,27 @@ const startServer = ({ bot, config }: StartServerOptions) => {
   return Bun.serve({
     port: config.port,
     fetch: async (request) => {
-      const { pathname } = new URL(request.url)
-      if (request.method === "GET" && pathname === HEALTH_PATH) {
-        return Response.json({ status: "ok" })
+      try {
+        const { pathname } = new URL(request.url)
+        if (request.method === "GET" && pathname === HEALTH_PATH) {
+          return Response.json({ status: "ok" })
+        }
+        if (request.method === "POST" && pathname === config.mainBotPath) {
+          return await handleWebhook(request)
+        }
+        return new Response("Not Found", { status: 404 })
+      } catch (error) {
+        const log = createLogger({ operation: "webhook_error" })
+        log.error(error instanceof Error ? error : new Error(String(error)))
+        log.emit()
+        return new Response("Internal Server Error", { status: 500 })
       }
-      if (request.method === "POST" && pathname === config.mainBotPath) {
-        return handleWebhook(request)
-      }
-      return new Response("Not Found", { status: 404 })
     },
   })
 }
 
-const buildWebhookUrl = (config: Config): string => `https://${config.domain}${config.mainBotPath}`
+const buildWebhookUrl = (config: AppConfigShape): string =>
+  `https://${config.domain}${config.mainBotPath}`
 
 const setWebhookSafely = async (bot: Bot<BotContext>, url: string): Promise<boolean> => {
   const log = createLogger({ operation: "set_webhook" })

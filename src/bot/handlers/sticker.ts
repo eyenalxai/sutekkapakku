@@ -1,25 +1,27 @@
 import type { Sticker } from "grammy/types"
 
+import { Effect } from "effect"
 import { createLogger } from "evlog"
-import { GrammyError } from "grammy"
 
 import type { BotContext } from "@/bot/context"
 
+import { notify } from "@/bot/notify"
+import { runHandler } from "@/bot/run"
 import { buildStickerInput } from "@/bot/sticker-files"
 import { detectStickerSetType } from "@/bot/sticker-pack"
 import { addStickerToUserPack } from "@/bot/sticker-set-service"
+import { TelegramApi } from "@/bot/telegram-api"
+import { Users } from "@/bot/users"
+import { DbExecutor, runQuery } from "@/db/database"
 import { getStickerSetForUserByType } from "@/db/queries/sticker-sets"
-import { getUserByTelegramId } from "@/db/queries/users"
 
 interface StickerHandlerOptions {
   adminUsername: string
-  fileApiRoot: string
 }
 
 const NOT_REGISTERED_REPLY = "You are not registered yet.\nPlease use /start command.."
 const STICKER_REMOVED_REPLY =
   "Sticker removed from the pack. It may take a few minutes for sticker pack to update."
-const STICKERSET_NOT_MODIFIED = "STICKERSET_NOT_MODIFIED"
 
 const buildStickerSetNotModifiedReply = (adminUsername: string): string =>
   "It seems like you tried to remove a sticker from the pack, but it wasn't in the pack due to a bug in Telegram, most likely. Please wait 15 minutes and check if sticker is in your pack still.\n" +
@@ -32,30 +34,33 @@ const logIgnoredSticker = (ctx: BotContext, userId: number): void => {
   log.emit()
 }
 
-const removeSticker = async (
-  ctx: BotContext,
-  sticker: Sticker,
-  adminUsername: string,
-): Promise<void> => {
-  try {
-    await ctx.api.deleteStickerFromSet(sticker.file_id)
-  } catch (error) {
-    if (error instanceof GrammyError && error.description.includes(STICKERSET_NOT_MODIFIED)) {
-      await ctx.reply(buildStickerSetNotModifiedReply(adminUsername), { parse_mode: "HTML" })
+const removeSticker = (chatId: number, sticker: Sticker, adminUsername: string) =>
+  Effect.gen(function* removeStickerEffect() {
+    const telegram = yield* TelegramApi
+    const stickerSetName = sticker.set_name
+    if (stickerSetName === undefined) {
       return
     }
-    throw error
-  }
-
-  await ctx.reply(STICKER_REMOVED_REPLY)
-}
+    const notModified = yield* telegram.deleteStickerFromSet(stickerSetName, sticker.file_id).pipe(
+      Effect.as(false),
+      Effect.catchTag("StickerSetNotModified", () => Effect.succeed(true)),
+    )
+    if (notModified) {
+      yield* notify(chatId, buildStickerSetNotModifiedReply(adminUsername), {
+        parse_mode: "HTML",
+      })
+      return
+    }
+    yield* notify(chatId, STICKER_REMOVED_REPLY)
+  })
 
 const createStickerHandler =
-  ({ adminUsername, fileApiRoot }: StickerHandlerOptions) =>
+  ({ adminUsername }: StickerHandlerOptions) =>
   async (ctx: BotContext): Promise<void> => {
     const from = ctx.from
     const sticker = ctx.message?.sticker
-    if (from === undefined || sticker === undefined) {
+    const chatId = ctx.chat?.id
+    if (from === undefined || sticker === undefined || chatId === undefined) {
       return
     }
 
@@ -65,40 +70,51 @@ const createStickerHandler =
       return
     }
 
-    const user = await getUserByTelegramId(ctx.dbTx, String(from.id))
-    if (user === undefined) {
-      await ctx.reply(NOT_REGISTERED_REPLY)
-      return
-    }
+    await runHandler(
+      ctx,
+      Effect.gen(function* stickerHandlerEffect() {
+        const users = yield* Users
+        const telegram = yield* TelegramApi
+        const { executor } = yield* DbExecutor
 
-    const stickerSetType = detectStickerSetType(sticker)
-    const existingSet = await getStickerSetForUserByType(ctx.dbTx, user.id, stickerSetType)
-    if (existingSet !== undefined && sticker.set_name === existingSet.name) {
-      await removeSticker(ctx, sticker, adminUsername)
-      return
-    }
+        const user = yield* users.findByTelegramId(String(from.id))
+        if (user === undefined) {
+          yield* notify(chatId, NOT_REGISTERED_REPLY)
+          return
+        }
 
-    const telegramUsername = from.username
-    if (telegramUsername === undefined || telegramUsername.length === 0) {
-      return
-    }
+        const stickerSetType = detectStickerSetType(sticker)
+        const existingSet = yield* runQuery("getStickerSetForUserByType", () =>
+          getStickerSetForUserByType(executor, user.id, stickerSetType),
+        )
+        if (existingSet !== undefined && sticker.set_name === existingSet.name) {
+          yield* removeSticker(chatId, sticker, adminUsername)
+          return
+        }
 
-    const stickerInput = await buildStickerInput({
-      api: ctx.api,
-      emoji,
-      fileApiRoot,
-      sticker,
-      stickerSetType,
-      token: ctx.api.token,
-    })
+        const telegramUsername = from.username
+        if (telegramUsername === undefined || telegramUsername.length === 0) {
+          return
+        }
 
-    await addStickerToUserPack(ctx, {
-      sticker: stickerInput,
-      stickerSetType,
-      telegramUser: from,
-      telegramUsername,
-      user,
-    })
+        const stickerInput = yield* buildStickerInput({
+          telegram,
+          sticker,
+          stickerSetType,
+          emoji,
+        })
+
+        yield* addStickerToUserPack({
+          chatId,
+          sticker: stickerInput,
+          stickerSetType,
+          telegramUser: from,
+          telegramUsername,
+          user,
+        })
+      }),
+    )
   }
 
 export { createStickerHandler }
+export type { StickerHandlerOptions }

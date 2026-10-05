@@ -19,6 +19,7 @@
   "dependencies": {
     "@grammyjs/runner": "2.0.3",
     "drizzle-orm": "1.0.0-rc.5-5935859",
+    "effect": "4.0.0",
     "emoji-regex": "11.0.0",
     "evlog": "2.29.0",
     "grammy": "1.46.0"

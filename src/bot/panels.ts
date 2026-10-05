@@ -38,10 +38,13 @@ const archivedSuffix = (volume: StickerSet): string => {
 const volumeLine = (volume: StickerSet): string =>
   `${TYPE_ICONS[volume.stickerSetType]} ${escapeHtml(volume.title)} — ${volume.stickerCount}/${STICKERS_PER_SET}${archivedSuffix(volume)}`
 
-const volumeButtonLabel = (volume: StickerSet): string =>
-  `${TYPE_ICONS[volume.stickerSetType]} ${volume.stickerCount}/${STICKERS_PER_SET}${volume.archivedAt === null ? "" : " · 🗄"}`
+const truncate = (value: string, maximum: number): string =>
+  value.length <= maximum ? value : `${value.slice(0, maximum - 1)}…`
 
-const mainMenu = (adminUsername: string, header = "🎒 <b>Sutekkapakku</b>"): Panel => {
+const volumeButtonLabel = (volume: StickerSet): string =>
+  `${TYPE_ICONS[volume.stickerSetType]} ${truncate(volume.title, 28)}${volume.archivedAt === null ? "" : " · 🗄"}`
+
+const mainMenu = (adminUsername: string, firstName: string): Panel => {
   const keyboard = new InlineKeyboard()
     .text("📦 My packs", encode({ kind: "menu", view: "packs" }))
     .text("🗑 Remove a sticker", encode({ kind: "menu", view: "remove" }))
@@ -51,7 +54,7 @@ const mainMenu = (adminUsername: string, header = "🎒 <b>Sutekkapakku</b>"): P
     .row()
     .url("💬 Contact", `https://t.me/${adminUsername}`)
   return {
-    text: `${header}\n\nSend me a sticker and I'll add it to your packs. Use the buttons below to manage them.`,
+    text: `Hello, <b>${escapeHtml(firstName)}</b>!\n\nSend me a sticker and I'll add it to your packs. Use the buttons below to manage them.`,
     keyboard,
   }
 }
@@ -174,7 +177,10 @@ const showPanel = (
     yield* telegram.editMessageText(chatId, messageId, panel.text, options).pipe(
       Effect.catchTag("MessageNotModified", () => Effect.void),
       Effect.catchTag("MessageNotEditable", () =>
-        telegram.sendMessage(chatId, panel.text, options).pipe(Effect.asVoid),
+        Effect.gen(function* replaceUneditablePanel() {
+          yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)
+          yield* telegram.sendMessage(chatId, panel.text, options).pipe(Effect.asVoid)
+        }),
       ),
       Effect.catchTag("ChatUnavailable", () => Effect.void),
       Effect.catchTag("TelegramApiError", (error) =>

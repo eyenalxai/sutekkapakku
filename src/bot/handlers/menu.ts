@@ -6,21 +6,10 @@ import { startFlow } from "@/bot/flows"
 import { loadVolumes } from "@/bot/handlers/shared"
 import { notify } from "@/bot/notify"
 import { Packs } from "@/bot/packs"
-import {
-  addPanel,
-  escapeHtml,
-  helpPanel,
-  mainMenu,
-  packsPanel,
-  removePrompt,
-  showPanel,
-} from "@/bot/panels"
+import { addPanel, helpPanel, mainMenu, packsPanel, removePrompt, showPanel } from "@/bot/panels"
 import { NOT_REGISTERED_REPLY } from "@/bot/replies"
 import { runHandler } from "@/bot/run"
 import { Users } from "@/bot/users"
-
-const fullName = (firstName: string, lastName: string | undefined): string =>
-  lastName === undefined ? firstName : `${firstName} ${lastName}`
 
 const createMenuHandler =
   (adminUsername: string) =>
@@ -38,11 +27,7 @@ const createMenuHandler =
         if (existing === undefined) {
           yield* users.register(String(from.id))
         }
-        const greeting =
-          existing === undefined
-            ? `Welcome, <b>${escapeHtml(fullName(from.first_name, from.last_name))}</b>!`
-            : `Hello, <b>${escapeHtml(from.first_name)}</b>!`
-        yield* showPanel(chatId, undefined, mainMenu(adminUsername, greeting))
+        yield* showPanel(chatId, undefined, mainMenu(adminUsername, from.first_name))
       }),
     )
   }
@@ -127,15 +112,16 @@ const createRemoveHandler =
 const createCancelHandler =
   (adminUsername: string) =>
   async (ctx: BotContext): Promise<void> => {
+    const from = ctx.from
     const chatId = ctx.chat?.id
-    if (chatId === undefined) {
+    if (from === undefined || chatId === undefined) {
       return
     }
     ctx.session.flow = undefined
     await runHandler(
       ctx,
       Effect.gen(function* cancelHandlerEffect() {
-        yield* showPanel(chatId, undefined, mainMenu(adminUsername))
+        yield* showPanel(chatId, undefined, mainMenu(adminUsername, from.first_name))
       }),
     )
   }

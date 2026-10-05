@@ -60,7 +60,7 @@ const handleMenuCallback = (params: CallbackParams & { readonly view: MenuView }
       return
     }
     clearFlow(ctx)
-    yield* showPanel(chatId, messageId, mainMenu(adminUsername))
+    yield* showPanel(chatId, messageId, mainMenu(adminUsername, ctx.from?.first_name ?? "there"))
   })
 
 const handlePackCallback = (
@@ -122,10 +122,18 @@ const dispatch = (params: CallbackParams & { readonly callback: Callback }) =>
         if (flow?.kind === "browse" && flow.messageId === messageId && messageId !== undefined) {
           const telegram = yield* TelegramApi
           yield* telegram.deleteMessage(chatId, messageId).pipe(Effect.ignore)
-          yield* showPanel(chatId, undefined, mainMenu(adminUsername))
+          yield* showPanel(
+            chatId,
+            undefined,
+            mainMenu(adminUsername, ctx.from?.first_name ?? "there"),
+          )
           return
         }
-        yield* showPanel(chatId, messageId, mainMenu(adminUsername))
+        yield* showPanel(
+          chatId,
+          messageId,
+          mainMenu(adminUsername, ctx.from?.first_name ?? "there"),
+        )
         return
       }
       case "menu": {

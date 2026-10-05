@@ -7,6 +7,7 @@ import type { Db } from "@/db/client"
 
 import { createPhotoHandler } from "@/bot/handlers/photo"
 import { createStartHandler } from "@/bot/handlers/start"
+import { createStickerHandler } from "@/bot/handlers/sticker"
 
 interface BotDependencies {
   apiToken: string
@@ -66,6 +67,7 @@ const createBot = (deps: BotDependencies): Bot<BotContext> => {
 
   bot.command(["start", "help"], createStartHandler(adminUsername))
 
+  bot.on("message:sticker", createStickerHandler({ adminUsername, fileApiRoot }))
   bot.on("message:photo", createPhotoHandler({ fileApiRoot }))
 
   bot.catch((botError) => {
